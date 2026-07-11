@@ -282,15 +282,51 @@ RAM réelle obtenue** (c'est elle qui sert à la victoire).
 **⚠️ ROUTE_22 (header 27) injoignable par Vol** (repli sur la porte, écran noir
 d'atterrissage) — 0 photo cette passe, nécessite la méthode warp-tour.
 
-**✅ ID de carte courant ÉPINGLÉ + câblé** (victoire intérieur : coords locales
-pas uniques → comparer (mapID, x, y)). ⚠️ Les 6 premiers candidats (scan
-76→185→137, 3 valeurs) étaient FAUX (idx1 suivait le X du joueur). Bon scan =
-intersection sur **5 intérieurs** (185→137→191→6→7) → 5 survivantes :
-`0x0227D460` (retenue), `0x022BC150`, `0x022BC188`, `0x022A0382`, `0x022A174C`
-(les 4 autres = secours si la 1re déraille). Câblée dans `bridge/hgss.lua`
-(champ `mapid` de la table GAMES, écrit dans `pokegeo_pos.json`). Testé de bout
-en bout : round intérieur Antre Dragon (mapID 253) → bonne carte+coords gagne,
-mauvaise carte au bon endroit ne gagne pas.
+**✅ ID DE CARTE — RÉSOLU DÉFINITIVEMENT (session 5)** : victoire intérieur =
+comparer (mapID, x, y) car les coords locales ne sont pas uniques.
+
+⚠️⚠️ **Toutes les adresses trouvées en session 4 étaient FAUSSES** (`0x0227D460`
+et les autres candidats "épinglés") : trouvées via scan pendant des
+téléportations **patchées en RAM** (le mécanisme de warp qu'on manipulait
+soi-même) → on retrouvait des artefacts du patch, pas la vraie variable de
+jeu. Symptôme en prod : mapID toujours 0 en jeu réel (marche naturelle), donc
+**tous les rounds intérieurs étaient perdus d'avance** en multijoueur. Piège
+à ne plus refaire : ne JAMAIS valider une adresse RAM en la découvrant
+pendant qu'on patch soi-même le mécanisme qu'on observe.
+
+**Bonne méthode (celle qui marche)** : consulter le code décompilé
+[pret/pokeheartgold](https://github.com/pret/pokeheartgold) via `gh api
+search/code` (GitHub CLI, déjà authentifié) plutôt que deviner par scan pur.
+Trouvé `src/field_system.c` : `static FieldSystem *sFieldSysPtr;` — un
+pointeur **statique** (adresse fixe à chaque boot, contrairement au tas).
+`include/field_types_def.h` donne `struct Location { int mapId; ... }`.
+Chaîne : `FieldSystem = r32(sFieldSysPtr)` → `Location = r32(FieldSystem+0x20)`
+→ `mapId = r32(Location+0x00)` (offset `location` dans `FieldSystem` compté à
+la main depuis `include/field_system.h`, +0x20 après `unk1C`).
+
+**Adresse statique trouvée pour la ROM FR (IPGF) : `0x021D1130`.** Méthode de
+recherche : scan des 4 Mo de RAM pour toute adresse A dont la valeur double-
+déréférencée (A → +0x20 → +0x0) vaut 76 (Doublonville, au spawn) ; 14
+candidats bruts, filtrés à 76→185 (marche **naturelle**, aucun patch) = 13 ;
+**re-testés sur un BOOT FROID complet (nouveau process EmuHawk)** : seuls 2
+survivent (`0x021D1130`, `0x021D4178`) — tous les autres retombent à 0/garbage
+(preuve que c'était du tas). `0x021D1130` reconfirmé sur un **3ᵉ boot froid**
+avec le vrai `bridge/hgss.lua` (pas juste un script de sonde), JSON produit
+`{"mapID":185,...}` en entrant naturellement au CP de Doublonville. Câblée
+dans `bridge/hgss.lua` (champ `mapidPtr`, fonction `readMapId()`).
+
+**Leçon générale à retenir pour toute future recherche d'adresse RAM** :
+1. Ne jamais halluciner une adresse par scan de valeur seul, sans double-
+   déréférence structurelle si on a le choix (une struct connue via décomp
+   élimine 99 % des faux positifs d'un coup).
+2. **Toujours valider par reboot froid complet** (nouveau process, pas juste
+   `savestate.load`) avant de câbler en dur dans un script de production —
+   c'est le SEUL test qui distingue une adresse statique (fiable) d'une copie
+   de tas qui a l'air de marcher par coïncidence pendant une session.
+3. Consulter le code source décompilé (`gh api search/code` sur
+   pret/pokeheartgold, déjà authentifié dans ce projet) est plus rapide et
+   plus fiable que deviner par scan pur dès qu'une struct/nom de variable
+   plausible existe.
 
 **✅ FIX GROTTES SOMBRES** : l'octet à l'offset **+20** de la struct MapHeader
 (24 o) est le champ **MÉTÉO**. Grotte sombre = `0x16`/`0x17`. Le **mettre à 0**
