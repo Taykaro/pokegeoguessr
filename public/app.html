@@ -27,6 +27,14 @@
     .btn:disabled { opacity: .55; cursor: default; }
     .btn-danger { background: #5a2b2b; border-color: #6b3a3a; }
     .btn-danger:hover { background: #6b3535; }
+    #hints { display: flex; flex-direction: column; gap: 5px; font-size: 13px; }
+    #hints:empty { display: none; }
+    #hints .hint { padding: 6px 9px; border-radius: 7px; border-left: 3px solid;
+      background: #171b24; line-height: 1.25; }
+    #hints .hint.lost   { border-color: #4c7ef0; color: #a9c2ff; }
+    #hints .hint.region { border-color: #e0872a; color: #f0b878; }
+    #hints .hint.warm   { border-color: #e0c62a; color: #f2dd7a; }
+    #hints .hint.goat   { border-color: #45c05a; color: #8ee89c; font-weight: bold; }
     #scores { margin-top: auto; font-size: 13px; color: #b9c0cd; }
     #scores b { color: #e8ebf0; }
   </style>
@@ -41,6 +49,7 @@
       <div class="admin-only"><span class="k">Ta position :</span> <b id="pos">–</b></div>
       <div id="dist" class="admin-only">–</div>
     </div>
+    <div id="hints"></div>
     <div class="btns">
       <button id="passvote" class="btn">🙋 Demander à passer</button>
       <button id="abandon" class="btn btn-danger">🏳️ Abandonner</button>

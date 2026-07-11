@@ -27,8 +27,22 @@ function apply(s) {
   const pv = $('passvote');
   pv.textContent = myVoted ? `✅ En attente (${got}/${need})` : `🙋 Demander à passer (${got}/${need})`;
   pv.disabled = myVoted || s.phase !== 'playing';
+  hints(s);
   img();
   countdown();
+}
+// Tableau chaud/froid : une ligne par joueur avec une position connue.
+const HINT_EMOJI = { lost: '🥶', region: '🧭', warm: '🔥', goat: '🐐' };
+function hints(s) {
+  const box = $('hints');
+  const list = (s.phase === 'playing' && s.hints) ? s.hints : [];
+  box.innerHTML = list
+    .map((h) => {
+      const emoji = HINT_EMOJI[h.tier] || '';
+      const text = h.message.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+      return `<div class="hint ${h.tier}">${emoji} ${text}</div>`;
+    })
+    .join('');
 }
 function img() { $('photo').src = `/img/${room}?t=${Date.now()}`; }
 function countdown() {

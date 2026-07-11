@@ -1,3 +1,14 @@
+// Message chaud/froid personnalisé selon le palier de proximité du joueur.
+function hintMessage(name, tier) {
+  switch (tier) {
+    case 'lost':   return `Il est perdu ${name}, j'ai jamais vu un gars aussi perdu`;
+    case 'region': return `${name}, ya de l'idée mais faut savoir lire une carte`;
+    case 'warm':   return `${name} lui au moins, il sait lire une carte`;
+    case 'goat':   return `${name.toUpperCase()} quel goat celui-là`;
+    default:       return '';
+  }
+}
+
 // Logique d'une partie : rounds, dézoom progressif, détection du gagnant.
 class Room {
   constructor(io, name, pack, config) {
@@ -186,6 +197,20 @@ class Room {
     }, this.config.intermissionSec * 1000);
   }
 
+  // Indices chaud/froid par joueur (pour le tableau affiché à chaque dézoom).
+  // Uniquement quand on joue et que la position du joueur est calculable.
+  computeHints() {
+    if (this.phase !== 'playing' || !this.target) return [];
+    const out = [];
+    for (const p of this.players.values()) {
+      if (p.offline || !p.lastPos) continue;
+      const h = this.pack.proximityHint(this.target, p.lastPos.mapID, p.lastPos.x, p.lastPos.y);
+      if (!h) continue;
+      out.push({ name: p.name, tier: h.tier, message: hintMessage(p.name, h.tier) });
+    }
+    return out;
+  }
+
   publicState() {
     return {
       room: this.name,
@@ -198,6 +223,7 @@ class Room {
       zoomIntervalSec: this.config.zoomIntervalSec,
       passVotes: this.passVotes.size,
       passNeeded: [...this.players.values()].filter((p) => !p.offline).length,
+      hints: this.computeHints(),
       players: [...this.players.values()]
         .map((p) => ({ name: p.name, score: p.score, offline: !!p.offline }))
         .sort((a, b) => b.score - a.score),

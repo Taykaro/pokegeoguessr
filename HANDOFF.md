@@ -13,6 +13,17 @@ le lieu (± marge de quelques tuiles) gagne le point, puis round suivant.
 
 - **Vérification victoire = comparaison de coordonnées** lues en RAM. C'est
   simple et **déjà fonctionnel**. La cartographie ne sert QU'À produire les photos.
+
+**Calibration géographique (indice chaud/froid, session 5)** : sur la matrice
+monde, les coords ext. `gx`/`gy` sont des tuiles globales ; **1 « carte »
+(chunk) = 32 tuiles**. Frontière Johto/Kanto sur l'axe X : **Johto ≈ gx
+256-830, Kanto ≈ gx 896-1438**, transition (Mont Argenté/Tohjo) vers **gx 865**
+(constante `REGION_BOUNDARY_GX` dans `server/pack.js`). Distance en cartes =
+`max(|dx|,|dy|)/32` (Chebyshev). Sert au tableau chaud/froid par joueur
+(`pack.proximityHint` → paliers goat ≤2 / warm ≤5 / region / lost, messages
+dans `game.js` `hintMessage`, tableau `#hints` côté client, recalculé à chaque
+dézoom via `publicState`). N'existe que pour cibles **extérieures** (les
+intérieurs ont des coords locales, pas de distance monde → pas d'indice).
 - Multijoueur : chacun son émulateur + pont ; le serveur centralise rounds/scores.
 
 ## 2. Ce qui MARCHE (validé de bout en bout)

@@ -2,6 +2,17 @@ const fs = require('fs');
 const path = require('path');
 const { PNG } = require('pngjs');
 
+// --- Géographie du monde HGSS (pour l'indice chaud/froid) ---
+// Les coords extérieures gx/gy sont des tuiles globales sur la matrice monde.
+// 1 "carte" (chunk de la matrice) = 32 tuiles.
+const CHUNK_TILES = 32;
+// Frontière Johto / Kanto sur l'axe X global : Johto ≈ gx 256-830,
+// Kanto ≈ gx 896-1438 ; la transition (Mont Argenté / Tohjo) est vers gx 865.
+const REGION_BOUNDARY_GX = 865;
+// Bornes plausibles d'une position overworld (photos ext. : gx 64-1438,
+// gy 60-536, avec marge). Hors de ça = coords locales d'intérieur -> pas d'indice.
+const WORLD_MIN_X = 30, WORLD_MAX_X = 1500, WORLD_MIN_Y = 30, WORLD_MAX_Y = 600;
+
 // Un "game pack" = un dossier avec pack.json + map.png.
 // pack.json décrit la correspondance (mapID, x, y locaux) -> tuile globale,
 // les zones jouables où tirer des cibles, et les niveaux de zoom.
@@ -92,6 +103,32 @@ class GamePack {
     const pos = this.toGlobal(mapID, x, y);
     if (!pos) return false;
     return Math.abs(pos.gx - target.gx) <= margin && Math.abs(pos.gy - target.gy) <= margin;
+  }
+
+  // Région (johto/kanto) d'une tuile globale X.
+  regionOf(gx) {
+    return gx < REGION_BOUNDARY_GX ? 'johto' : 'kanto';
+  }
+
+  // Indice chaud/froid : à quelle distance (en "cartes") le joueur est de la
+  // cible, et dans quel palier. Renvoie null si non calculable :
+  //  - cible intérieure (coords locales, pas de distance monde) ;
+  //  - position joueur hors matrice monde (il est dans un bâtiment).
+  // Palier : 'goat' (≤2 cartes) | 'warm' (≤5) | 'region' (bonne région, loin)
+  //          | 'lost' (mauvaise région).
+  proximityHint(target, mapID, x, y) {
+    if (this.mode !== 'photo' || !target || target.interior) return null;
+    x = Number(x); y = Number(y);
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+    if (x < WORLD_MIN_X || x > WORLD_MAX_X || y < WORLD_MIN_Y || y > WORLD_MAX_Y) return null;
+    const dx = Math.abs(x - target.gx), dy = Math.abs(y - target.gy);
+    const mapsAway = Math.max(dx, dy) / CHUNK_TILES;
+    let tier;
+    if (mapsAway <= 2) tier = 'goat';
+    else if (mapsAway <= 5) tier = 'warm';
+    else if (this.regionOf(x) === this.regionOf(target.gx)) tier = 'region';
+    else tier = 'lost';
+    return { tier, mapsAway };
   }
 
   // Les images de zoom d'un round, quel que soit le mode.
