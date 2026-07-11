@@ -1,0 +1,45 @@
+{
+  "name": "poke-geoguessr",
+  "version": "0.1.0",
+  "private": true,
+  "description": "GeoGuessr multijoueur pour Pokémon (SoulSilver et autres) — trouve l'endroit avec ton personnage en jeu",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "app": "electron electron-main.js",
+    "genmap": "node tools/gen-testmap.js",
+    "bridge": "node bridge/watch.js"
+  },
+  "build": {
+    "appId": "com.taykaro.pokegeoguessr",
+    "productName": "PokeGeoGuessr",
+    "files": [
+      "electron-main.js",
+      "config.json",
+      "server/**",
+      "public/**",
+      "gamepacks/hgss_photos/**",
+      "bridge/**"
+    ],
+    "extraResources": [
+      "BizHawk-2.11.1-win-x64/**",
+      "Pokemon - Version Argent SoulSilver (France)/**",
+      "gamepacks/hgss/soulsilver_fullcs_FR.sav"
+    ],
+    "win": {
+      "target": "portable"
+    }
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "koffi": "^3.1.1",
+    "pngjs": "^7.0.0",
+    "socket.io": "^4.7.5"
+  },
+  "devDependencies": {
+    "electron": "^43.1.0"
+  }
+}

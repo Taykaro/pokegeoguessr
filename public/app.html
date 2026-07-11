@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>PokéGeoGuessr</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #0f1117; color: #e8ebf0;
+      font-family: "Segoe UI", system-ui, sans-serif; overflow: hidden; }
+    #panel { height: 100%; box-sizing: border-box; display: flex; flex-direction: column;
+      padding: 14px; gap: 12px; }
+    #head { display: flex; justify-content: space-between; align-items: baseline; }
+    #head h1 { font-size: 16px; margin: 0; }
+    #head .r { color: #8a93a6; font-size: 13px; }
+    #photo-wrap { position: relative; width: 100%; aspect-ratio: 4/3; background: #000;
+      border-radius: 10px; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+    #photo { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; }
+    #banner { position: absolute; left: 0; right: 0; top: 42%; text-align: center;
+      font-size: 20px; font-weight: bold; background: rgba(0,0,0,.55); padding: 10px; }
+    #meta { font-size: 13px; color: #b9c0cd; display: flex; justify-content: space-between; }
+    #info { font-size: 14px; display: flex; flex-direction: column; gap: 6px; }
+    .k { color: #8a93a6; }
+    #dist { font-weight: bold; color: #7fd48c; min-height: 18px; }
+    .btns { display: flex; gap: 8px; }
+    .btn { flex: 1; padding: 9px; background: #2b3550; color: #fff; border: 1px solid #3a4665;
+      border-radius: 8px; cursor: pointer; font-size: 13px; }
+    .btn:hover { background: #354065; }
+    #scores { margin-top: auto; font-size: 13px; color: #b9c0cd; }
+    #scores b { color: #e8ebf0; }
+  </style>
+</head>
+<body>
+  <div id="panel">
+    <div id="head"><h1>🎯 Objectif</h1><span class="r">Round <b id="round">–</b></span></div>
+    <div id="photo-wrap"><img id="photo" alt="Où est-ce ?"><div id="banner" hidden></div></div>
+    <div id="meta"><span>Zoom <b id="zoom">1</b>/4</span><span id="countdown"></span></div>
+    <div id="info">
+      <div class="admin-only"><span class="k">Cible :</span> <b id="target">–</b></div>
+      <div class="admin-only"><span class="k">Ta position :</span> <b id="pos">–</b></div>
+      <div id="dist" class="admin-only">–</div>
+    </div>
+    <div class="btns admin-only">
+      <button id="skip" class="btn">⏭️ Passer</button>
+      <button id="reveal" class="btn">👁️ Révéler</button>
+    </div>
+    <div id="scores"><span class="k">Scores :</span> <span id="scores-v">–</span></div>
+  </div>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+{
+  "name": "Carte de test",
+  "tileSize": 16,
+  "zoomLevels": [64, 128, 256, 512, 1024],
+  "marginTiles": 3,
+  "simFullMap": true,
+  "maps": {
+    "0": { "offsetX": 0, "offsetY": 0 }
+  },
+  "playable": [
+    { "x": 4, "y": 4, "w": 120, "h": 120 }
+  ]
+}

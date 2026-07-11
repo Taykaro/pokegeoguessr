@@ -1,0 +1,37 @@
+node_modules/
+gamepacks/testpack/map.png
+*.nds
+*.sav
+pokegeo_pos.json
+
+# Gros binaires / privés — PAS sur le serveur d'hébergement multi.
+BizHawk-2.11.1-win-x64/
+Pokemon - Version Argent SoulSilver (France)/
+hgss-map-randomizer-main/
+DSPRE-canary-*/
+*.SaveRAM
+*.State
+
+# gamepacks/hgss/ = données de calibration/dev (carte source, save, walkmask...),
+# pas nécessaires au serveur (qui utilise gamepacks/hgss_photos/). On garde
+# hgss_photos intact (les photos du jeu, servies aux joueurs).
+gamepacks/hgss/
+
+# Scratch de capture (des Go de captures brutes/outils temporaires — le résultat
+# final est déjà dans gamepacks/hgss_photos/)
+_capture_scratch/
+captures_demo_*/
+captures_interieurs/
+captures_exterieurs/
+
+# Fichiers Windows / artefacts de téléchargement à la racine, pas du code
+*:Zone.Identifier
+*.png
+!public/**/*.png
+!gamepacks/hgss_photos/**/*.png
+
+# Config/session Claude locale
+.claude/
+
+# Le serveur multi a besoin de : server/, public/, gamepacks/hgss_photos/,
+# config.json, package.json (les photos du jeu y sont).

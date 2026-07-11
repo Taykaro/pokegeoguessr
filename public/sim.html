@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Simulateur — PokéGeoGuessr</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    #sim-wrap { display: flex; gap: 16px; padding: 16px 20px; flex-wrap: wrap; }
+    #sim-canvas { border-radius: 12px; background: #000; image-rendering: pixelated; }
+    #sim-info { background: #232738; border-radius: 12px; padding: 14px 18px; min-width: 220px; }
+    #sim-info p { margin: 6px 0; font-size: 0.9rem; }
+    kbd { background: #333850; padding: 1px 6px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <div id="join-screen">
+    <h1>Simulateur</h1>
+    <p class="subtitle">Remplace l'émulateur pour tester : déplace-toi avec les flèches / ZQSD.</p>
+    <form id="join-form">
+      <input id="name-input" type="text" placeholder="Ton pseudo" maxlength="20" required>
+      <input id="room-input" type="text" placeholder="Room (défaut : main)" maxlength="20">
+      <button type="submit">Entrer sur la carte</button>
+    </form>
+    <p class="hint">Ouvre aussi la <a href="/" target="_blank" style="color:#e8433f">page de jeu</a> dans un autre onglet avec le même pseudo pour voir l'image à trouver.</p>
+  </div>
+
+  <div id="sim-screen" hidden>
+    <header style="display:flex;justify-content:space-between;padding:12px 20px;background:#232738">
+      <div>Simulateur — <b id="player-label"></b></div>
+      <div id="pos-label">x: –, y: –</div>
+    </header>
+    <div id="sim-wrap">
+      <canvas id="sim-canvas" width="528" height="528"></canvas>
+      <div id="sim-info">
+        <p><kbd>↑↓←→</kbd> ou <kbd>ZQSD</kbd> : se déplacer (1 tuile)</p>
+        <p>Maintiens la touche pour courir.</p>
+        <p>Ta position est envoyée au serveur comme le ferait l'émulateur. Si tu arrives sur la cible (± marge), tu gagnes le round.</p>
+        <p id="sim-status" style="color:#9aa0b5"></p>
+      </div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    const $ = (id) => document.getElementById(id);
+    const VIEW_TILES = 33; // tuiles visibles (33x33, joueur au centre)
+    let pack = null, mapImg = null;
+    let px = 64, py = 64; // position en tuiles
+
+    fetch('/api/pack').then((r) => r.json()).then((p) => {
+      pack = p;
+      if (p.simFullMap) {
+        mapImg = new Image();
+        mapImg.src = '/simmap';
+        mapImg.onload = draw;
+      }
+    });
+
+    $('join-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = $('name-input').value.trim();
+      const room = ($('room-input').value.trim() || 'main').toLowerCase();
+      socket.emit('join', { name, room }, (res) => {
+        if (!res.ok) return alert(res.error);
+        $('join-screen').hidden = true;
+        $('sim-screen').hidden = false;
+        $('player-label').textContent = `${name} @ ${room}`;
+        sendPos();
+        draw();
+      });
+    });
+
+    const keys = { ArrowUp: [0,-1], ArrowDown: [0,1], ArrowLeft: [-1,0], ArrowRight: [1,0],
+                   z: [0,-1], s: [0,1], q: [-1,0], d: [1,0], w: [0,-1], a: [-1,0] };
+    let held = null, moveTimer = null;
+
+    function move(dx, dy) {
+      px = Math.max(0, Math.min((pack?.widthTiles ?? 128) - 1, px + dx));
+      py = Math.max(0, Math.min((pack?.heightTiles ?? 128) - 1, py + dy));
+      sendPos();
+      draw();
+    }
+
+    document.addEventListener('keydown', (e) => {
+      const k = keys[e.key] || keys[e.key.toLowerCase()];
+      if (!k || $('sim-screen').hidden) return;
+      e.preventDefault();
+      if (held === e.key) return;
+      held = e.key;
+      move(k[0], k[1]);
+      clearInterval(moveTimer);
+      moveTimer = setInterval(() => move(k[0], k[1]), 110);
+    });
+    document.addEventListener('keyup', (e) => {
+      if (held === e.key) { held = null; clearInterval(moveTimer); }
+    });
+
+    let lastSend = 0;
+    function sendPos() {
+      const now = Date.now();
+      if (now - lastSend < 80) return;
+      lastSend = now;
+      socket.emit('pos', { mapID: 0, x: px, y: py });
+      $('pos-label').textContent = `x: ${px}, y: ${py}`;
+    }
+
+    function draw() {
+      const c = $('sim-canvas'), ctx = c.getContext('2d');
+      ctx.imageSmoothingEnabled = false;
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, c.width, c.height);
+      if (!mapImg || !pack) return;
+      const ts = pack.tileSize;
+      const half = Math.floor(VIEW_TILES / 2);
+      const sx = (px - half) * ts, sy = (py - half) * ts;
+      const sw = VIEW_TILES * ts;
+      ctx.drawImage(mapImg, sx, sy, sw, sw, 0, 0, c.width, c.height);
+      // Joueur au centre
+      const cpx = half * (c.width / VIEW_TILES), cts = c.width / VIEW_TILES;
+      ctx.fillStyle = '#ff2222';
+      ctx.beginPath();
+      ctx.arc(cpx + cts / 2, cpx + cts / 2, cts / 2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+    }
+
+    socket.on('round:won', (d) => { $('sim-status').textContent = `🏆 ${d.winner} a trouvé !`; });
+    socket.on('round:new', (d) => { $('sim-status').textContent = `Round ${d.round} en cours...`; });
+  </script>
+</body>
+</html>

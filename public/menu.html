@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>PokéGeoGuessr</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #0f1117; color: #e8ebf0;
+      font-family: "Segoe UI", system-ui, sans-serif; }
+    #wrap { height: 100%; box-sizing: border-box; display: flex; flex-direction: column;
+      justify-content: center; padding: 24px; gap: 14px; }
+    h1 { margin: 0; font-size: 22px; text-align: center; }
+    .sub { margin: 0 0 8px; text-align: center; color: #8a93a6; font-size: 14px; }
+    .mode { display: flex; flex-direction: column; align-items: flex-start; gap: 3px;
+      padding: 14px 16px; background: #1b2130; color: #e8ebf0; border: 1px solid #2c3444;
+      border-radius: 12px; cursor: pointer; font-size: 16px; text-align: left; }
+    .mode:hover { background: #232b3d; border-color: #3a4665; }
+    .mode span { font-size: 12px; color: #8a93a6; font-weight: normal; }
+    #multi-form { display: flex; flex-direction: column; gap: 8px; margin-top: 6px;
+      padding: 14px; background: #161a24; border: 1px solid #2c3444; border-radius: 12px; }
+    #multi-form input { padding: 10px; background: #0f1117; color: #e8ebf0;
+      border: 1px solid #2c3444; border-radius: 8px; font-size: 14px; }
+    #multi-form button { padding: 10px; background: #2f6f4f; color: #fff; border: none;
+      border-radius: 8px; cursor: pointer; font-size: 14px; }
+    #multi-form button:hover { background: #368059; }
+  </style>
+</head>
+<body>
+  <div id="wrap">
+    <h1>🎯 PokéGeoGuessr</h1>
+    <p class="sub">Choisis un mode</p>
+    <button class="mode" id="btn-solo">🎮 Solo<span>Joue seul, trouve les lieux</span></button>
+    <button class="mode" id="btn-admin">🛠️ Admin<span>Solo + coordonnées & passer les maps (pour tes tests)</span></button>
+    <button class="mode" id="btn-multi">🌍 Multijoueur<span>Rejoins tes potes en ligne dans une room</span></button>
+    <div id="multi-form" hidden>
+      <input id="m-name" placeholder="Ton pseudo" maxlength="20">
+      <input id="m-room" placeholder="Nom de la room (ex : soiree)" maxlength="20">
+      <input id="m-server" placeholder="Adresse du serveur (https://...)">
+      <button id="m-go">Rejoindre</button>
+    </div>
+  </div>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    $('btn-solo').onclick = () => window.pokegeo.chooseMode({ mode: 'solo' });
+    $('btn-admin').onclick = () => window.pokegeo.chooseMode({ mode: 'admin' });
+    $('btn-multi').onclick = () => { $('multi-form').hidden = false; $('m-name').focus(); };
+    $('m-go').onclick = () => {
+      const name = $('m-name').value.trim();
+      const room = $('m-room').value.trim() || 'main';
+      let server = $('m-server').value.trim();
+      if (!name) return alert('Pseudo requis');
+      if (!server) return alert('Adresse du serveur requise');
+      if (!/^https?:\/\//.test(server)) server = 'https://' + server;
+      window.pokegeo.chooseMode({ mode: 'multi', name, room, server });
+    };
+  </script>
+</body>
+</html>

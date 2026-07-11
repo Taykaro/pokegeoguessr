@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PokéGeoGuessr</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="join-screen">
+    <h1>PokéGeoGuessr</h1>
+    <p class="subtitle">Trouve l'endroit avec ton personnage en jeu. Premier arrivé = 1 point.</p>
+    <form id="join-form">
+      <input id="name-input" type="text" placeholder="Ton pseudo" maxlength="20" required>
+      <input id="room-input" type="text" placeholder="Room (défaut : main)" maxlength="20">
+      <label class="admin-check"><input id="admin-input" type="checkbox"> Mode admin (test : coords + passer les maps)</label>
+      <button type="submit">Rejoindre</button>
+    </form>
+    <p class="hint">⚠️ Utilise le <b>même pseudo</b> dans le pont émulateur (bridge) pour que ta position compte.</p>
+  </div>
+
+  <div id="game-screen" hidden>
+    <header>
+      <div>
+        <span id="pack-name"></span> — Room <b id="room-name"></b>
+      </div>
+      <div id="round-info">Round <b id="round-num">–</b></div>
+    </header>
+
+    <main>
+      <div id="photo-wrap">
+        <img id="photo" alt="Où est-ce ?">
+        <div id="marker" hidden>📍</div>
+        <div id="banner" hidden></div>
+        <div id="zoom-badge">Zoom <span id="zoom-level">1</span>/<span id="zoom-max">5</span></div>
+        <div id="countdown" title="Prochain dézoom"></div>
+      </div>
+
+      <aside>
+        <div id="admin-panel" hidden>
+          <h2>🛠️ Admin</h2>
+          <div class="admin-row">Cible : <b id="admin-target">–</b></div>
+          <div class="admin-row">Ta position : <b id="admin-pos">–</b></div>
+          <div class="admin-row" id="admin-dist">–</div>
+          <button id="admin-skip">⏭️ Passer la map</button>
+          <button id="admin-reveal">👁️ Voir la photo pleine</button>
+        </div>
+        <h2>Scores</h2>
+        <ol id="scoreboard"></ol>
+        <h2>Événements</h2>
+        <ul id="log"></ul>
+      </aside>
+    </main>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="client.js"></script>
+</body>
+</html>
