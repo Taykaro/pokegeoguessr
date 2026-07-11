@@ -28,6 +28,9 @@ class GamePack {
     this.maps = cfg.maps || {};
     this.playable = cfg.playable || [];
     this.mode = cfg.mode || 'map';
+    // Porte overworld (coords RAM globales) de chaque intérieur, pour l'indice
+    // chaud/froid : mapID -> { gx, gy }. Construit par tools/build-interior-doors.js.
+    this.interiorDoors = cfg.interiorDoors || {};
 
     if (this.mode === 'photo') {
       // Pack "photo" : chaque round = une vraie capture du jeu (écran du haut),
@@ -110,23 +113,35 @@ class GamePack {
     return gx < REGION_BOUNDARY_GX ? 'johto' : 'kanto';
   }
 
+  // Position monde (coords RAM globales) d'une cible : directe pour un extérieur,
+  // sinon la porte overworld de l'intérieur. null si intérieur sans porte connue.
+  targetWorldPos(target) {
+    if (!target.interior) return { gx: target.gx, gy: target.gy };
+    const door = this.interiorDoors[String(target.mapID)];
+    return door ? { gx: door.gx, gy: door.gy } : null;
+  }
+
   // Indice chaud/froid : à quelle distance (en "cartes") le joueur est de la
-  // cible, et dans quel palier. Renvoie null si non calculable :
-  //  - cible intérieure (coords locales, pas de distance monde) ;
-  //  - position joueur hors matrice monde (il est dans un bâtiment).
+  // cible, et dans quel palier. Pour un intérieur, la distance est mesurée
+  // jusqu'à sa PORTE overworld (le joueur chasse en extérieur vers l'entrée).
+  // Renvoie null si non calculable :
+  //  - intérieur sans porte connue (12 cas : cartes atteintes par événement) ;
+  //  - position joueur hors matrice monde (il est lui-même dans un bâtiment).
   // Palier : 'goat' (≤2 cartes) | 'warm' (≤5) | 'region' (bonne région, loin)
   //          | 'lost' (mauvaise région).
   proximityHint(target, mapID, x, y) {
-    if (this.mode !== 'photo' || !target || target.interior) return null;
+    if (this.mode !== 'photo' || !target) return null;
+    const tpos = this.targetWorldPos(target);
+    if (!tpos) return null;
     x = Number(x); y = Number(y);
     if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
     if (x < WORLD_MIN_X || x > WORLD_MAX_X || y < WORLD_MIN_Y || y > WORLD_MAX_Y) return null;
-    const dx = Math.abs(x - target.gx), dy = Math.abs(y - target.gy);
+    const dx = Math.abs(x - tpos.gx), dy = Math.abs(y - tpos.gy);
     const mapsAway = Math.max(dx, dy) / CHUNK_TILES;
     let tier;
     if (mapsAway <= 2) tier = 'goat';
     else if (mapsAway <= 5) tier = 'warm';
-    else if (this.regionOf(x) === this.regionOf(target.gx)) tier = 'region';
+    else if (this.regionOf(x) === this.regionOf(tpos.gx)) tier = 'region';
     else tier = 'lost';
     return { tier, mapsAway };
   }

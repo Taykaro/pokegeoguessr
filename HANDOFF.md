@@ -22,8 +22,18 @@ monde, les coords ext. `gx`/`gy` sont des tuiles globales ; **1 « carte »
 `max(|dx|,|dy|)/32` (Chebyshev). Sert au tableau chaud/froid par joueur
 (`pack.proximityHint` → paliers goat ≤2 / warm ≤5 / region / lost, messages
 dans `game.js` `hintMessage`, tableau `#hints` côté client, recalculé à chaque
-dézoom via `publicState`). N'existe que pour cibles **extérieures** (les
-intérieurs ont des coords locales, pas de distance monde → pas d'indice).
+dézoom via `publicState`). Pour les cibles **intérieures**, on mesure la distance jusqu'à la **porte
+overworld** du bâtiment (le joueur chasse en extérieur vers l'entrée) :
+table `mapID → (gx,gy)` construite par `tools/build-interior-doors.js` et
+embarquée dans `pack.json` (`interiorDoors`). Méthode : dans les warps
+(`extract-warps.js`), on cherche celui dont `destMap == mapID` intérieur ; sa
+position est en coords MATRICE → coord RAM = `(px, py+28)` (même calibration
+que le reste). Bâtiments à étages : on remonte le graphe des warps
+(2F→1F→rue) jusqu'à une carte overworld. Résolu pour **371/383** intérieurs ;
+12 échecs = cartes atteintes par événement scénario (Sinjoh, concours de
+capture, Power Plant cassé) ou maps JP inutilisées → pas d'indice pour
+celles-là. Validé : mapID 185 (CP Doublonville) → porte (352,396) = la coord
+RAM réelle de la porte confirmée en jeu.
 - Multijoueur : chacun son émulateur + pont ; le serveur centralise rounds/scores.
 
 ## 2. Ce qui MARCHE (validé de bout en bout)
