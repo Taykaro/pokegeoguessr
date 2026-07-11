@@ -25,13 +25,19 @@ captures_interieurs/
 captures_exterieurs/
 
 # Fichiers Windows / artefacts de téléchargement à la racine, pas du code
-*:Zone.Identifier
+*:Zone.Identifier*
 *.png
 !public/**/*.png
 !gamepacks/hgss_photos/**/*.png
+000*.per
 
 # Config/session Claude locale
 .claude/
+
+# Build de l'appli packagée (.exe) — gros, régénérable via `npm run dist`,
+# PAS nécessaire sur le serveur d'hébergement multi.
+dist/
+dist.zip
 
 # Le serveur multi a besoin de : server/, public/, gamepacks/hgss_photos/,
 # config.json, package.json (les photos du jeu y sont).

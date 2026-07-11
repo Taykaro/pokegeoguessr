@@ -24,6 +24,9 @@
     .btn { flex: 1; padding: 9px; background: #2b3550; color: #fff; border: 1px solid #3a4665;
       border-radius: 8px; cursor: pointer; font-size: 13px; }
     .btn:hover { background: #354065; }
+    .btn:disabled { opacity: .55; cursor: default; }
+    .btn-danger { background: #5a2b2b; border-color: #6b3a3a; }
+    .btn-danger:hover { background: #6b3535; }
     #scores { margin-top: auto; font-size: 13px; color: #b9c0cd; }
     #scores b { color: #e8ebf0; }
   </style>
@@ -38,8 +41,12 @@
       <div class="admin-only"><span class="k">Ta position :</span> <b id="pos">–</b></div>
       <div id="dist" class="admin-only">–</div>
     </div>
+    <div class="btns">
+      <button id="passvote" class="btn">🙋 Demander à passer</button>
+      <button id="abandon" class="btn btn-danger">🏳️ Abandonner</button>
+    </div>
     <div class="btns admin-only">
-      <button id="skip" class="btn">⏭️ Passer</button>
+      <button id="skip" class="btn">⏭️ Passer (admin)</button>
       <button id="reveal" class="btn">👁️ Révéler</button>
     </div>
     <div id="scores"><span class="k">Scores :</span> <span id="scores-v">–</span></div>

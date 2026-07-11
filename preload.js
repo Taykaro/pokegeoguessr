@@ -2,4 +2,5 @@
 const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('pokegeo', {
   chooseMode: (cfg) => ipcRenderer.send('pokegeo:mode', cfg),
+  goToMenu: () => ipcRenderer.send('pokegeo:menu'),
 });

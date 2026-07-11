@@ -22,6 +22,8 @@
     #multi-form button { padding: 10px; background: #2f6f4f; color: #fff; border: none;
       border-radius: 8px; cursor: pointer; font-size: 14px; }
     #multi-form button:hover { background: #368059; }
+    #multi-form summary { cursor: pointer; color: #8a93a6; font-size: 12px; margin-top: 2px; }
+    #multi-form details input { margin-top: 6px; }
   </style>
 </head>
 <body>
@@ -34,7 +36,10 @@
     <div id="multi-form" hidden>
       <input id="m-name" placeholder="Ton pseudo" maxlength="20">
       <input id="m-room" placeholder="Nom de la room (ex : soiree)" maxlength="20">
-      <input id="m-server" placeholder="Adresse du serveur (https://...)">
+      <details>
+        <summary>⚙️ Serveur avancé (laisse par défaut sauf si redéployé ailleurs)</summary>
+        <input id="m-server" placeholder="Adresse du serveur (https://...)" value="https://pokegeoguessr.onrender.com">
+      </details>
       <button id="m-go">Rejoindre</button>
     </div>
   </div>

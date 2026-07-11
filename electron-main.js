@@ -14,18 +14,23 @@ const { spawn } = require('child_process');
 const win32 = require('./win-embed');
 
 const ROOT = __dirname;
+// En dev, tout (code ET gros binaires BizHawk/ROM) vit sous ROOT. Une fois
+// packagé (electron-builder), le code va dans resources/app/ (=ROOT) mais les
+// "extraResources" (BizHawk, ROM, save) vont un cran au-dessus, dans
+// resources/ (=process.resourcesPath). EXTRA pointe toujours vers le bon dossier.
+const EXTRA = app.isPackaged ? process.resourcesPath : ROOT;
 const PORT = require('./config.json').port || 3000;
 const LOCAL = `http://localhost:${PORT}`;
 const OBJ_W = 440, OBJ_H = 740;
 const BIZ_W = 560, BIZ_H = 540;
 const GAP = 8;
 
-const BIZHAWK = path.join(ROOT, 'BizHawk-2.11.1-win-x64', 'EmuHawk.exe');
-const ROM = path.join(ROOT, 'Pokemon - Version Argent SoulSilver (France)', 'Pokemon - Version Argent SoulSilver (France).nds');
+const BIZHAWK = path.join(EXTRA, 'BizHawk-2.11.1-win-x64', 'EmuHawk.exe');
+const ROM = path.join(EXTRA, 'Pokemon - Version Argent SoulSilver (France)', 'Pokemon - Version Argent SoulSilver (France).nds');
 const LUA = path.join(ROOT, 'bridge', 'hgss.lua');
 const POSFILE = path.join(ROOT, 'bridge', 'pokegeo_pos.json');
-const SAVE_SRC = path.join(ROOT, 'gamepacks', 'hgss', 'soulsilver_fullcs_FR.sav');
-const SAVE_DST = path.join(ROOT, 'BizHawk-2.11.1-win-x64', 'NDS', 'SaveRAM', 'Pokemon - Version Argent SoulSilver (France).SaveRAM');
+const SAVE_SRC = path.join(EXTRA, 'gamepacks', 'hgss', 'soulsilver_fullcs_FR.sav');
+const SAVE_DST = path.join(EXTRA, 'BizHawk-2.11.1-win-x64', 'NDS', 'SaveRAM', 'Pokemon - Version Argent SoulSilver (France).SaveRAM');
 
 let emu = null, win = null, watcher = null, placeTimer = null, quitting = false;
 
@@ -112,6 +117,10 @@ function quitAll() {
 }
 
 ipcMain.on('pokegeo:mode', (e, cfg) => onMode(cfg || {}));
+ipcMain.on('pokegeo:menu', () => {
+  clearInterval(watcher); // on quitte la partie -> plus besoin de relayer la position
+  win.loadURL(`${LOCAL}/menu.html`);
+});
 
 app.whenReady().then(() => {
   startServer();

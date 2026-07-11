@@ -8,12 +8,14 @@ const room = params.get('room') || 'main';
 const isAdmin = params.get('admin') === '1';
 let state = null;
 let cd = null;
+let adminKey = null;
+let myVoted = false;
 
 // Solo / Multi : on masque tout ce qui révèle la réponse ou triche.
 if (!isAdmin) document.querySelectorAll('.admin-only').forEach((e) => (e.hidden = true));
 
 socket.emit('join', { name: myName, room, admin: isAdmin }, (res) => {
-  if (res && res.ok) apply(res.state);
+  if (res && res.ok) { adminKey = res.adminKey || null; apply(res.state); }
 });
 
 function apply(s) {
@@ -21,6 +23,10 @@ function apply(s) {
   $('round').textContent = s.round;
   $('zoom').textContent = s.level + 1;
   $('scores-v').textContent = (s.players || []).map((p) => `${p.name} ${p.score}`).join(' · ') || '–';
+  const need = s.passNeeded ?? 0, got = s.passVotes ?? 0;
+  const pv = $('passvote');
+  pv.textContent = myVoted ? `✅ En attente (${got}/${need})` : `🙋 Demander à passer (${got}/${need})`;
+  pv.disabled = myVoted || s.phase !== 'playing';
   img();
   countdown();
 }
@@ -37,10 +43,16 @@ function countdown() {
 }
 
 $('skip').onclick = () => socket.emit('admin:skip');
-$('reveal').onclick = () => { $('photo').src = `/img/${room}?full=1&t=${Date.now()}`; };
+$('reveal').onclick = () => { $('photo').src = `/img/${room}?full=1&key=${adminKey}&t=${Date.now()}`; };
+$('passvote').onclick = () => { myVoted = true; socket.emit('pass:request'); if (state) apply(state); };
+$('abandon').onclick = () => {
+  socket.emit('leave');
+  if (window.pokegeo && window.pokegeo.goToMenu) window.pokegeo.goToMenu();
+  else location.reload();
+};
 
 socket.on('state', apply);
-socket.on('round:new', (s) => { $('banner').hidden = true; apply(s); });
+socket.on('round:new', (s) => { $('banner').hidden = true; myVoted = false; apply(s); });
 socket.on('round:zoom', apply);
 socket.on('round:won', (d) => {
   apply(d);

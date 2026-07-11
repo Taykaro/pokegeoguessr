@@ -36,12 +36,24 @@ io.on('connection', (socket) => {
     joined = { room: r, name, admin: !!admin };
     r.addPlayer(socket, name);
     if (admin) r.addAdmin(socket);
-    if (ack) ack({ ok: true, state: r.publicState(), admin: !!admin });
+    if (ack) ack({ ok: true, state: r.publicState(), admin: !!admin, adminKey: admin ? r.adminKey : undefined });
   });
 
-  // Admin : passer au round suivant.
+  // Admin : passer au round suivant instantanément (pour les tests).
   socket.on('admin:skip', () => {
     if (joined && joined.admin) joined.room.skipRound();
+  });
+
+  // N'importe quel joueur : demande à passer. Round suivant seulement quand
+  // TOUS les joueurs connectés ont demandé à passer.
+  socket.on('pass:request', () => {
+    if (joined) joined.room.requestPass(joined.name);
+  });
+
+  // Abandon volontaire : quitte la room proprement (contrairement à une
+  // déconnexion réseau qui garde la place pour se reconnecter).
+  socket.on('leave', () => {
+    if (joined) { joined.room.leaveRoom(socket.id); joined = null; }
   });
 
   // Position envoyée par le simulateur web (ou tout client socket).
@@ -63,9 +75,14 @@ app.post('/pos', (req, res) => {
 });
 
 // Image du round en cours (niveau de zoom actuel uniquement — pas de triche possible).
+// L'image PLEINE (?full=1) exige la clé admin de la room : sans elle, impossible
+// de deviner l'URL pour voir la réponse (fermé pour tout le monde en ligne, sauf
+// un vrai admin qui a rejoint avec le mode admin).
 app.get('/img/:room', (req, res) => {
   const r = rooms.get(String(req.params.room).toLowerCase());
-  const img = r && (req.query.full ? r.fullImage() : r.currentImage());
+  if (!r) return res.status(404).end();
+  if (req.query.full && req.query.key !== r.adminKey) return res.status(403).end();
+  const img = req.query.full ? r.fullImage() : r.currentImage();
   if (!img) return res.status(404).end();
   res.set('Content-Type', 'image/png');
   res.set('Cache-Control', 'no-store');

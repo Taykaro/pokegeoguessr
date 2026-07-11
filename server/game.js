@@ -14,6 +14,10 @@ class Room {
     this.zoomTimer = null;
     this.nextZoomAt = null;
     this.roundStartedAt = null;
+    this.passVotes = new Set(); // noms (lowercase) des joueurs voulant passer ce round
+    // secret par room, distribué uniquement aux vrais admins — empêche de
+    // récupérer l'image pleine (/img?full=1) en devinant juste l'URL.
+    this.adminKey = Math.random().toString(36).slice(2) + Date.now().toString(36);
   }
 
   channel() {
@@ -42,6 +46,15 @@ class Room {
     const p = this.players.get(socketId);
     if (p) p.offline = true;
     this.broadcastState();
+    this.checkPassThreshold(); // un joueur qui part peut débloquer le vote
+  }
+
+  // Abandon volontaire : retire complètement le joueur (contrairement à une
+  // simple déconnexion réseau, qui garde sa place pour se reconnecter).
+  leaveRoom(socketId) {
+    this.players.delete(socketId);
+    this.broadcastState();
+    this.checkPassThreshold();
   }
 
   findPlayerByName(playerName) {
@@ -56,6 +69,7 @@ class Room {
     this.roundNum++;
     this.phase = 'playing';
     this.level = 0;
+    this.passVotes = new Set();
     this.target = this.pack.randomTarget();
     this.crops = this.pack.roundCrops(this.target);
     this.roundStartedAt = Date.now();
@@ -125,6 +139,26 @@ class Room {
     this.startRound();
   }
 
+  // --- Vote "passer" : il faut que TOUS les joueurs connectés (non hors-ligne)
+  // demandent à passer pour changer de round. ---
+  requestPass(playerName) {
+    if (this.phase !== 'playing') return;
+    const player = this.findPlayerByName(playerName);
+    if (!player || player.offline) return;
+    this.passVotes.add(player.name.toLowerCase());
+    this.broadcastState();
+    this.checkPassThreshold();
+  }
+
+  checkPassThreshold() {
+    if (this.phase !== 'playing') return;
+    const active = [...this.players.values()].filter((p) => !p.offline);
+    if (active.length > 0 && this.passVotes.size >= active.length) {
+      console.log(`[${this.name}] vote unanime pour passer (${this.passVotes.size}/${active.length})`);
+      this.startRound();
+    }
+  }
+
   win(player) {
     clearTimeout(this.zoomTimer);
     this.phase = 'intermission';
@@ -162,6 +196,8 @@ class Room {
       maxLevel: this.pack.zoomLevels.length - 1,
       nextZoomAt: this.nextZoomAt,
       zoomIntervalSec: this.config.zoomIntervalSec,
+      passVotes: this.passVotes.size,
+      passNeeded: [...this.players.values()].filter((p) => !p.offline).length,
       players: [...this.players.values()]
         .map((p) => ({ name: p.name, score: p.score, offline: !!p.offline }))
         .sort((a, b) => b.score - a.score),
