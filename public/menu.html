@@ -24,12 +24,34 @@
     #multi-form button:hover { background: #368059; }
     #multi-form summary { cursor: pointer; color: #8a93a6; font-size: 12px; margin-top: 2px; }
     #multi-form details input { margin-top: 6px; }
+    #filters { display: flex; gap: 10px; padding: 10px 14px; background: #161a24;
+      border: 1px solid #2c3444; border-radius: 12px; }
+    #filters label { flex: 1; display: flex; flex-direction: column; gap: 4px;
+      font-size: 12px; color: #8a93a6; }
+    #filters select { padding: 8px; background: #0f1117; color: #e8ebf0;
+      border: 1px solid #2c3444; border-radius: 8px; font-size: 14px; }
   </style>
 </head>
 <body>
   <div id="wrap">
     <h1>🎯 PokéGeoGuessr</h1>
     <p class="sub">Choisis un mode</p>
+    <div id="filters">
+      <label>Région
+        <select id="f-region">
+          <option value="all">Tout (Johto + Kanto)</option>
+          <option value="johto">Johto</option>
+          <option value="kanto">Kanto</option>
+        </select>
+      </label>
+      <label>Lieux
+        <select id="f-type">
+          <option value="all">Tous</option>
+          <option value="ext">Extérieurs</option>
+          <option value="int">Intérieurs</option>
+        </select>
+      </label>
+    </div>
     <button class="mode" id="btn-solo">🎮 Solo<span>Joue seul, trouve les lieux</span></button>
     <button class="mode" id="btn-admin">🛠️ Admin<span>Solo + coordonnées & passer les maps (pour tes tests)</span></button>
     <button class="mode" id="btn-multi">🌍 Multijoueur<span>Rejoins tes potes en ligne dans une room</span></button>
@@ -45,8 +67,9 @@
   </div>
   <script>
     const $ = (id) => document.getElementById(id);
-    $('btn-solo').onclick = () => window.pokegeo.chooseMode({ mode: 'solo' });
-    $('btn-admin').onclick = () => window.pokegeo.chooseMode({ mode: 'admin' });
+    const filter = () => ({ region: $('f-region').value, type: $('f-type').value });
+    $('btn-solo').onclick = () => window.pokegeo.chooseMode({ mode: 'solo', ...filter() });
+    $('btn-admin').onclick = () => window.pokegeo.chooseMode({ mode: 'admin', ...filter() });
     $('btn-multi').onclick = () => { $('multi-form').hidden = false; $('m-name').focus(); };
     $('m-go').onclick = () => {
       const name = $('m-name').value.trim();
@@ -55,7 +78,7 @@
       if (!name) return alert('Pseudo requis');
       if (!server) return alert('Adresse du serveur requise');
       if (!/^https?:\/\//.test(server)) server = 'https://' + server;
-      window.pokegeo.chooseMode({ mode: 'multi', name, room, server });
+      window.pokegeo.chooseMode({ mode: 'multi', name, room, server, ...filter() });
     };
   </script>
 </body>

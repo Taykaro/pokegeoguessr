@@ -19,20 +19,29 @@ app.use(express.static(path.join(__dirname, '..', 'public')));
 const server = http.createServer(app);
 const io = new Server(server);
 
+// Normalise un filtre reçu du client (région / type de lieu).
+function sanitizeFilter(f) {
+  f = f || {};
+  const region = ['all', 'johto', 'kanto'].includes(f.region) ? f.region : 'all';
+  const type = ['all', 'ext', 'int'].includes(f.type) ? f.type : 'all';
+  return { region, type };
+}
+
 const rooms = new Map();
-function getRoom(name) {
+function getRoom(name, filter) {
   const key = String(name || 'main').toLowerCase();
-  if (!rooms.has(key)) rooms.set(key, new Room(io, key, pack, config));
+  // Le filtre n'est appliqué qu'à la CRÉATION (choix du créateur de la room).
+  if (!rooms.has(key)) rooms.set(key, new Room(io, key, pack, config, sanitizeFilter(filter)));
   return rooms.get(key);
 }
 
 io.on('connection', (socket) => {
   let joined = null; // { room, name }
 
-  socket.on('join', ({ name, room, admin }, ack) => {
+  socket.on('join', ({ name, room, admin, filter }, ack) => {
     name = String(name || '').trim().slice(0, 20);
     if (!name) return ack && ack({ ok: false, error: 'Pseudo requis' });
-    const r = getRoom(room);
+    const r = getRoom(room, filter);
     joined = { room: r, name, admin: !!admin };
     r.addPlayer(socket, name);
     if (admin) r.addAdmin(socket);
@@ -87,6 +96,16 @@ app.get('/img/:room', (req, res) => {
   res.set('Content-Type', 'image/png');
   res.set('Cache-Control', 'no-store');
   res.send(img);
+});
+
+// Minimap du monde (silhouette) pour la révélation de fin de round. Ne révèle
+// aucune cible en soi (juste la carte + positions envoyées au moment du round gagné).
+app.get('/minimap', (req, res) => {
+  const buf = pack.minimapBuffer && pack.minimapBuffer();
+  if (!buf) return res.status(404).end();
+  res.set('Content-Type', 'image/png');
+  res.set('Cache-Control', 'public, max-age=86400');
+  res.send(buf);
 });
 
 // Carte complète — uniquement pour le pack de test (simulateur). Jamais pour un vrai pack.

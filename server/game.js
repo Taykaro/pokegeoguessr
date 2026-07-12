@@ -11,11 +11,13 @@ function hintMessage(name, tier) {
 
 // Logique d'une partie : rounds, dézoom progressif, détection du gagnant.
 class Room {
-  constructor(io, name, pack, config) {
+  constructor(io, name, pack, config, filter) {
     this.io = io;
     this.name = name;
     this.pack = pack;
     this.config = config;
+    // Filtre de la room (choisi par son créateur) : région / type de lieu.
+    this.filter = filter || { region: 'all', type: 'all' };
     this.players = new Map(); // socketId -> { name, score }
     this.roundNum = 0;
     this.phase = 'waiting'; // waiting | playing | intermission
@@ -81,7 +83,7 @@ class Room {
     this.phase = 'playing';
     this.level = 0;
     this.passVotes = new Set();
-    this.target = this.pack.randomTarget();
+    this.target = this.pack.randomTarget(this.filter);
     this.crops = this.pack.roundCrops(this.target);
     this.roundStartedAt = Date.now();
     this.scheduleZoom();
@@ -170,10 +172,42 @@ class Room {
     }
   }
 
+  // Position monde (coords RAM) d'un joueur si elle est exploitable (overworld),
+  // sinon null (il est dans un bâtiment -> coords locales).
+  worldPosOf(player) {
+    const p = player.lastPos;
+    if (!p) return null;
+    const x = Number(p.x), y = Number(p.y);
+    if (x < 30 || x > 1500 || y < 30 || y > 600) return null;
+    return { gx: x, gy: y };
+  }
+
+  // Données pour la révélation de fin de round sur la minimap :
+  // position monde de la cible + de chaque joueur (coords RAM 1:1 avec la minimap).
+  buildReveal(winnerName) {
+    const tpos = this.pack.targetWorldPos ? this.pack.targetWorldPos(this.target) : null;
+    const players = [];
+    for (const p of this.players.values()) {
+      const wp = this.worldPosOf(p);
+      if (wp) players.push({ name: p.name, gx: wp.gx, gy: wp.gy, won: p.name === winnerName });
+    }
+    return {
+      w: this.pack.minimapW || 0,
+      h: this.pack.minimapH || 0,
+      target: tpos ? { gx: tpos.gx, gy: tpos.gy } : null,
+      interior: !!this.target.interior,
+      zone: this.target.zone || null,
+      players,
+    };
+  }
+
   win(player) {
     clearTimeout(this.zoomTimer);
     this.phase = 'intermission';
-    player.score++;
+    // Score au temps : trouvé tôt (photo encore très zoomée) = plus de points.
+    // 4 niveaux de zoom -> 4,3,2,1 points selon le niveau atteint.
+    const pts = Math.max(1, this.crops.length - this.level);
+    player.score += pts;
     const elapsed = Math.round((Date.now() - this.roundStartedAt) / 1000);
     // Position de la cible relative au crop affiché, pour dessiner le marqueur côté client.
     // En mode photo, le joueur cible EST le centre de la capture -> marqueur au centre.
@@ -184,11 +218,13 @@ class Room {
       fx = (this.target.gx * ts + ts / 2 - rect.x) / rect.w;
       fy = (this.target.gy * ts + ts / 2 - rect.y) / rect.h;
     }
-    console.log(`[${this.name}] ${player.name} a trouvé en ${elapsed}s !`);
+    console.log(`[${this.name}] ${player.name} a trouvé en ${elapsed}s (+${pts} pts) !`);
     this.channel().emit('round:won', {
       winner: player.name,
       elapsedSec: elapsed,
+      points: pts,
       marker: { fx, fy },
+      reveal: this.buildReveal(player.name),
       ...this.publicState(),
     });
     setTimeout(() => {

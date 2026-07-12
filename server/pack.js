@@ -38,6 +38,15 @@ class GamePack {
       this.photos = cfg.photos || [];
       this.widthTiles = 0;
       this.heightTiles = 0;
+      // minimap.png : silhouette du monde en espace RAM 1:1 (1 px = 1 tuile),
+      // pour la révélation de fin de round (positions des joueurs + cible).
+      const mm = path.join(dir, 'minimap.png');
+      if (fs.existsSync(mm)) {
+        this.minimapPng = fs.readFileSync(mm);
+        const d = PNG.sync.read(this.minimapPng);
+        this.minimapW = d.width; this.minimapH = d.height;
+      } else { this.minimapPng = null; this.minimapW = 0; this.minimapH = 0; }
+      this._photoCache = new Map();
       return;
     }
 
@@ -59,9 +68,37 @@ class GamePack {
     return { gx: m.offsetX + x, gy: m.offsetY + y };
   }
 
-  randomTarget() {
+  // Région d'une photo (extérieur : sa position ; intérieur : sa porte).
+  // null si intérieur sans porte connue (région indéterminable).
+  photoRegion(p) {
+    if (!p.interior) return this.regionOf(p.gx);
+    const d = this.interiorDoors[String(p.mapID)];
+    return d ? this.regionOf(d.gx) : null;
+  }
+
+  // Sous-ensemble de photos selon un filtre { region, type } (avec cache).
+  //  region : 'all' | 'johto' | 'kanto'   type : 'all' | 'ext' | 'int'
+  // Si le filtre ne laisse rien, on retombe sur toutes les photos.
+  filteredPhotos(filter) {
+    const region = (filter && filter.region) || 'all';
+    const type = (filter && filter.type) || 'all';
+    const key = region + '|' + type;
+    if (this._photoCache.has(key)) return this._photoCache.get(key);
+    let pool = this.photos.filter((p) => {
+      if (type === 'ext' && p.interior) return false;
+      if (type === 'int' && !p.interior) return false;
+      if (region !== 'all' && this.photoRegion(p) !== region) return false;
+      return true;
+    });
+    if (!pool.length) pool = this.photos;
+    this._photoCache.set(key, pool);
+    return pool;
+  }
+
+  randomTarget(filter) {
     if (this.mode === 'photo') {
-      const p = this.photos[Math.floor(Math.random() * this.photos.length)];
+      const pool = this.filteredPhotos(filter);
+      const p = pool[Math.floor(Math.random() * pool.length)];
       return { gx: p.gx, gy: p.gy, file: p.file, zone: p.zone, interior: !!p.interior, mapID: p.mapID };
     }
     let rects = this.playable;
@@ -167,6 +204,10 @@ class GamePack {
 
   fullMapBuffer() {
     return PNG.sync.write(this.map);
+  }
+
+  minimapBuffer() {
+    return this.minimapPng;
   }
 }
 

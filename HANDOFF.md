@@ -14,6 +14,21 @@ le lieu (± marge de quelques tuiles) gagne le point, puis round suivant.
 - **Vérification victoire = comparaison de coordonnées** lues en RAM. C'est
   simple et **déjà fonctionnel**. La cartographie ne sert QU'À produire les photos.
 
+**Lot expérience de jeu (session 5)** : 4 features ajoutées.
+- **Score au temps** : trouver tôt (photo encore très zoomée) rapporte plus.
+  `win()` donne `crops.length - level` points (4→1 sur 4 niveaux).
+- **Filtres région/type** : la room est créée avec un filtre `{region, type}`
+  choisi dans le menu (`f-region`/`f-type`), passé en param d'URL → join →
+  `Room.filter` → `pack.randomTarget(filter)` / `pack.filteredPhotos` (cache).
+  Région d'une photo via `pack.photoRegion` (extérieur = sa position, intérieur
+  = sa porte). Appliqué à la CRÉATION de la room seulement.
+- **Révélation de fin de round** : `minimap.png` = copie de `walkmask.png`
+  (1504×572), en espace RAM **1:1** (1 px = 1 tuile, `gy` direct, vérifié).
+  Servie par `/minimap`. `round:won` embarque `reveal` (cible + positions monde
+  des joueurs) ; le client dessine sur un `<canvas id="reveal">`.
+- **Sons** : synthèse WebAudio (aucun asset, pas d'audio Pokémon copyrighté),
+  cues par palier chaud/froid au dézoom + jingle de victoire, bouton mute.
+
 **Calibration géographique (indice chaud/froid, session 5)** : sur la matrice
 monde, les coords ext. `gx`/`gy` sont des tuiles globales ; **1 « carte »
 (chunk) = 32 tuiles**. Frontière Johto/Kanto sur l'axe X : **Johto ≈ gx

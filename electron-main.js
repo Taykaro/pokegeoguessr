@@ -71,7 +71,9 @@ function onMode(cfg) {
   } else {
     origin = LOCAL; relay = LOCAL; name = 'Solo'; room = 'main'; admin = (cfg.mode === 'admin');
   }
-  const url = `${origin}/app.html?name=${encodeURIComponent(name)}&room=${encodeURIComponent(room)}${admin ? '&admin=1' : ''}`;
+  const region = cfg.region || 'all', type = cfg.type || 'all';
+  const url = `${origin}/app.html?name=${encodeURIComponent(name)}&room=${encodeURIComponent(room)}`
+    + `${admin ? '&admin=1' : ''}&region=${region}&type=${type}`;
   win.loadURL(url);
   startRelay(relay, room, name);
 }
