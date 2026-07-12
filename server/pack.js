@@ -158,6 +158,21 @@ class GamePack {
     return door ? { gx: door.gx, gy: door.gy } : null;
   }
 
+  // Position monde (coords RAM globales) d'un JOUEUR. Symétrique de la cible :
+  // s'il est dans un intérieur connu (mapID présent dans interiorDoors), on le
+  // rattache à la PORTE overworld de ce bâtiment (coord extérieure la plus
+  // proche) — sinon ses coords locales seraient prises à tort pour des coords
+  // monde et donneraient un « perdu » aberrant. En overworld, ses coords sont
+  // déjà globales. null si non localisable (intérieur sans porte, coords hors monde).
+  playerWorldPos(mapID, x, y) {
+    const door = this.interiorDoors[String(mapID)];
+    if (door) return { gx: door.gx, gy: door.gy };
+    x = Number(x); y = Number(y);
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+    if (x < WORLD_MIN_X || x > WORLD_MAX_X || y < WORLD_MIN_Y || y > WORLD_MAX_Y) return null;
+    return { gx: x, gy: y };
+  }
+
   // Indice chaud/froid : à quelle distance (en "cartes") le joueur est de la
   // cible, et dans quel palier. Pour un intérieur, la distance est mesurée
   // jusqu'à sa PORTE overworld (le joueur chasse en extérieur vers l'entrée).
@@ -170,15 +185,14 @@ class GamePack {
     if (this.mode !== 'photo' || !target) return null;
     const tpos = this.targetWorldPos(target);
     if (!tpos) return null;
-    x = Number(x); y = Number(y);
-    if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
-    if (x < WORLD_MIN_X || x > WORLD_MAX_X || y < WORLD_MIN_Y || y > WORLD_MAX_Y) return null;
-    const dx = Math.abs(x - tpos.gx), dy = Math.abs(y - tpos.gy);
+    const ppos = this.playerWorldPos(mapID, x, y);
+    if (!ppos) return null;
+    const dx = Math.abs(ppos.gx - tpos.gx), dy = Math.abs(ppos.gy - tpos.gy);
     const mapsAway = Math.max(dx, dy) / CHUNK_TILES;
     let tier;
     if (mapsAway <= 2) tier = 'goat';
     else if (mapsAway <= 5) tier = 'warm';
-    else if (this.regionOf(x) === this.regionOf(tpos.gx)) tier = 'region';
+    else if (this.regionOf(ppos.gx) === this.regionOf(tpos.gx)) tier = 'region';
     else tier = 'lost';
     return { tier, mapsAway };
   }

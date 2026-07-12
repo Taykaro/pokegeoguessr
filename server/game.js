@@ -172,14 +172,12 @@ class Room {
     }
   }
 
-  // Position monde (coords RAM) d'un joueur si elle est exploitable (overworld),
-  // sinon null (il est dans un bâtiment -> coords locales).
+  // Position monde (coords RAM) d'un joueur : overworld -> ses coords ; dans un
+  // bâtiment connu -> la porte du bâtiment (via pack.playerWorldPos). null sinon.
   worldPosOf(player) {
     const p = player.lastPos;
     if (!p) return null;
-    const x = Number(p.x), y = Number(p.y);
-    if (x < 30 || x > 1500 || y < 30 || y > 600) return null;
-    return { gx: x, gy: y };
+    return this.pack.playerWorldPos(p.mapID, p.x, p.y);
   }
 
   // Données pour la révélation de fin de round sur la minimap :
