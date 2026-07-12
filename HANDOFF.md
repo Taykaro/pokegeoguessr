@@ -66,11 +66,18 @@ embarquée dans `pack.json` (`interiorDoors`). Méthode : dans les warps
 (`extract-warps.js`), on cherche celui dont `destMap == mapID` intérieur ; sa
 position est en coords MATRICE → coord RAM = `(px, py+28)` (même calibration
 que le reste). Bâtiments à étages : on remonte le graphe des warps
-(2F→1F→rue) jusqu'à une carte overworld. Résolu pour **371/383** intérieurs ;
-12 échecs = cartes atteintes par événement scénario (Sinjoh, concours de
-capture, Power Plant cassé) ou maps JP inutilisées → pas d'indice pour
-celles-là. Validé : mapID 185 (CP Doublonville) → porte (352,396) = la coord
-RAM réelle de la porte confirmée en jeu.
+(2F→1F→rue) jusqu'à une carte overworld. La table couvre **TOUS les intérieurs du jeu** (404 headers non-overworld avec
+banque d'events), pas seulement ceux qui ont des photos — sinon un joueur qui
+entre dans une grotte non capturée (ex. **Grotte Union, map 99**) n'a aucune
+porte donc aucun chaud/froid (bug remonté). L'overworld est identifié via la
+matrice monde (NARC a/0/4/1, section headers) pour NE PAS donner de porte aux
+cartes overworld (sinon leurs coords globales seraient écrasées → chaud/froid
+extérieur cassé) — vérifié : 0 collision. **377/404** intérieurs résolus ;
+27 échecs = cartes événement/scénario (Sinjoh, concours de capture, salles
+cachées Ruines Alph, Power Plant cassé) ou maps inutilisées/JP → pas d'indice.
+Validé : mapID 185 → (352,396), map 99 (Union Cave) → (462,458).
+Reconstruire : `node tools/build-interior-doors.js <scratch_warps> "<ROM.nds>"`
+puis réinjecter dans `pack.json` (`interiorDoors`).
 - Multijoueur : chacun son émulateur + pont ; le serveur centralise rounds/scores.
 
 ## 2. Ce qui MARCHE (validé de bout en bout)

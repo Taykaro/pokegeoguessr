@@ -198,18 +198,10 @@ class Room {
     player.lastPos = { mapID: Number(mapID), x: Number(x), y: Number(y) };
     this.emitAdmin();
     if (this.phase !== 'playing' || !this.target) return;
-    if (this.pack.checkWin(this.target, mapID, Number(x), Number(y), this.currentMargin())) {
+    const margin = this.config.marginTiles ?? this.pack.marginTiles;
+    if (this.pack.checkWin(this.target, mapID, Number(x), Number(y), margin)) {
       this.win(player);
     }
-  }
-
-  // Marge de détection : plus large en intérieur (aires ouvertes comme la Place
-  // du Mont Sélénite, salles) où les points de capture sont espacés ; précise
-  // en extérieur.
-  currentMargin() {
-    const ext = this.config.marginTiles ?? this.pack.marginTiles;
-    if (this.target && this.target.interior) return this.config.interiorMarginTiles ?? ext;
-    return ext;
   }
 
   // --- Mode admin : voir la cible + les positions en direct, passer la map. ---
@@ -221,7 +213,7 @@ class Room {
     const t = this.target;
     this.io.to(`admin:${this.name}`).emit('admin', {
       target: t ? { gx: t.gx, gy: t.gy, zone: t.zone, interior: !!t.interior, mapID: t.mapID, file: t.file } : null,
-      margin: this.currentMargin(),
+      margin: this.config.marginTiles ?? this.pack.marginTiles,
       players: [...this.players.values()].map((p) => ({ name: p.name, pos: p.lastPos || null })),
     });
   }
