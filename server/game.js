@@ -29,6 +29,9 @@ class Room {
     this.config = config;
     // Filtre de la room (choisi par son créateur) : région / type de lieu.
     this.filter = filter || { region: 'all', type: 'all' };
+    // Difficulté : 'facile' (jauge live), 'moyen' (jauge au dézoom),
+    // 'difficile' (aucune jauge chaud/froid).
+    this.difficulty = (filter && filter.difficulty) || 'moyen';
     this.players = new Map(); // socketId -> { name, score }
     this.roundNum = 0;
     this.phase = 'waiting'; // waiting | playing | intermission
@@ -113,6 +116,7 @@ class Room {
   // trop espacé). N'émet que si les indices ont changé (léger event 'hints').
   startHintTicker() {
     clearInterval(this.hintTimer);
+    if (this.difficulty !== 'facile') return; // live uniquement en Facile
     this.lastHintsJson = '';
     this.hintTimer = setInterval(() => {
       if (this.phase !== 'playing') return;
@@ -288,7 +292,8 @@ class Room {
   // Indices chaud/froid par joueur (pour le tableau affiché à chaque dézoom).
   // Uniquement quand on joue et que la position du joueur est calculable.
   computeHints() {
-    if (this.phase !== 'playing' || !this.target) return [];
+    // En Difficile, aucune jauge chaud/froid n'est fournie.
+    if (this.phase !== 'playing' || !this.target || this.difficulty === 'difficile') return [];
     const out = [];
     for (const p of this.players.values()) {
       if (p.offline || !p.lastPos) continue;
@@ -317,6 +322,7 @@ class Room {
       passVotes: this.passVotes.size,
       passNeeded: [...this.players.values()].filter((p) => !p.offline).length,
       winScore: this.config.winScore || 0,
+      difficulty: this.difficulty,
       hints: this.computeHints(),
       players: [...this.players.values()]
         .map((p) => ({ name: p.name, score: p.score, offline: !!p.offline }))

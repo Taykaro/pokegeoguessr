@@ -24,7 +24,8 @@ function sanitizeFilter(f) {
   f = f || {};
   const region = ['all', 'johto', 'kanto'].includes(f.region) ? f.region : 'all';
   const type = ['all', 'ext', 'int'].includes(f.type) ? f.type : 'all';
-  return { region, type };
+  const difficulty = ['facile', 'moyen', 'difficile'].includes(f.difficulty) ? f.difficulty : 'moyen';
+  return { region, type, difficulty };
 }
 
 const rooms = new Map();
