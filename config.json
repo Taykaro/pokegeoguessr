@@ -4,6 +4,7 @@
   "zoomIntervalSec": 300,
   "intermissionSec": 8,
   "marginTiles": 3,
+  "interiorMarginTiles": 6,
   "winScore": 10,
   "podiumSec": 12
 }
