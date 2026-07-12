@@ -37,7 +37,16 @@ monde, les coords ext. `gx`/`gy` sont des tuiles globales ; **1 « carte »
 `max(|dx|,|dy|)/32` (Chebyshev). Sert au tableau chaud/froid par joueur
 (`pack.proximityHint` → paliers goat ≤2 / warm ≤5 / region / lost, messages
 dans `game.js` `hintMessage`, tableau `#hints` côté client, recalculé à chaque
-dézoom via `publicState`). Pour les cibles **intérieures**, on mesure la distance jusqu'à la **porte
+dézoom via `publicState`). ⚠️ **Symétrie porte côté JOUEUR aussi** (`pack.playerWorldPos`) : quand un
+joueur est DANS un intérieur connu (son `mapID` est une clé de `interiorDoors`),
+on prend la porte du bâtiment comme sa position monde, pas ses coords LOCALES.
+Sinon ces coords locales (ex. 34,55), si elles tombaient dans les bornes du
+monde, étaient prises pour des coords overworld → « perdu » aberrant (bug :
+deux joueurs dans des bâtiments de zones différentes avaient tous les deux
+« perdu »). Aucun mapID overworld ne collisionne avec les clés de portes
+(vérifié 76/60/32). Utilisé par `proximityHint` ET `worldPosOf` (révélation).
+
+Pour les cibles **intérieures**, on mesure la distance jusqu'à la **porte
 overworld** du bâtiment (le joueur chasse en extérieur vers l'entrée) :
 table `mapID → (gx,gy)` construite par `tools/build-interior-doors.js` et
 embarquée dans `pack.json` (`interiorDoors`). Méthode : dans les warps
