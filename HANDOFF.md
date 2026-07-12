@@ -14,6 +14,19 @@ le lieu (± marge de quelques tuiles) gagne le point, puis round suivant.
 - **Vérification victoire = comparaison de coordonnées** lues en RAM. C'est
   simple et **déjà fonctionnel**. La cartographie ne sert QU'À produire les photos.
 
+**Lot UI/fun (session 5)** :
+- **Jauge chaud/froid en balls** : chaque joueur = une ball (Poké < Super <
+  Hyper < Master, mappées aux paliers lost/region/warm/goat) + une barre de
+  proximité animée. `%` calculé serveur (`hintPct`, bandes croissantes avec le
+  rang de la ball). SVG des balls générés côté client (`ballSVG`). Rendu par
+  diff clé=nom (transition CSS de la largeur ; reflow forcé, PAS de rAF — rAF/
+  transition sont en pause dans un onglet hors-écran, d'où les tests via
+  `getBoundingClientRect` après désactivation de la transition).
+- **Premier à N points** (`config.winScore=10`, `podiumSec=12`) : `win()`
+  déclenche `endGame()` au seuil -> event `game:over` {winner, standings,
+  seconds} -> podium client (overlay `#podium`) -> reset scores + nouvelle
+  partie. `publicState` expose `winScore`.
+
 **Lot expérience de jeu (session 5)** : 4 features ajoutées.
 - **Score au temps** : trouver tôt (photo encore très zoomée) rapporte plus.
   `win()` donne `crops.length - level` points (4→1 sur 4 niveaux).

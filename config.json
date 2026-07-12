@@ -3,5 +3,7 @@
   "pack": "hgss_photos",
   "zoomIntervalSec": 300,
   "intermissionSec": 8,
-  "marginTiles": 3
+  "marginTiles": 3,
+  "winScore": 10,
+  "podiumSec": 12
 }

@@ -30,16 +30,49 @@
     .btn:disabled { opacity: .55; cursor: default; }
     .btn-danger { background: #5a2b2b; border-color: #6b3a3a; }
     .btn-danger:hover { background: #6b3535; }
-    #hints { display: flex; flex-direction: column; gap: 5px; font-size: 13px; }
+    #hints { display: flex; flex-direction: column; gap: 7px; }
     #hints:empty { display: none; }
-    #hints .hint { padding: 6px 9px; border-radius: 7px; border-left: 3px solid;
-      background: #171b24; line-height: 1.25; }
-    #hints .hint.lost   { border-color: #4c7ef0; color: #a9c2ff; }
-    #hints .hint.region { border-color: #e0872a; color: #f0b878; }
-    #hints .hint.warm   { border-color: #e0c62a; color: #f2dd7a; }
-    #hints .hint.goat   { border-color: #45c05a; color: #8ee89c; font-weight: bold; }
+    .pill { display: flex; align-items: center; gap: 10px; padding: 8px 10px;
+      background: linear-gradient(180deg, #1a2131, #141a27); border: 1px solid #232c3f;
+      border-radius: 12px; }
+    .pill-ball { width: 34px; height: 34px; flex: none; }
+    .pill-ball svg { display: block; filter: drop-shadow(0 1px 2px rgba(0,0,0,.5)); }
+    .pill-body { flex: 1; min-width: 0; }
+    .pill-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+    .pill-name { font-weight: 700; font-size: 13px; color: #eef2f8; }
+    .pill-tier { font-size: 11px; font-weight: 700; letter-spacing: .3px; color: var(--c); white-space: nowrap; }
+    .pill-track { height: 9px; margin-top: 5px; background: #0c1017; border-radius: 99px;
+      overflow: hidden; box-shadow: inset 0 1px 2px rgba(0,0,0,.6); }
+    .pill-fill { height: 100%; width: 0; border-radius: 99px;
+      background: linear-gradient(90deg, color-mix(in srgb, var(--c) 45%, #000), var(--c));
+      transition: width .9s cubic-bezier(.22,1,.36,1); }
+    .pill-msg { font-size: 11px; color: #7f8aaa; font-style: italic; white-space: nowrap;
+      overflow: hidden; text-overflow: ellipsis; margin-top: 3px; opacity: .9; }
+    .pill.lost   { --c: #ef5350; }
+    .pill.region { --c: #4a90e2; }
+    .pill.warm   { --c: #f2c037; }
+    .pill.goat   { --c: #b57bff; border-color: #6a3fb0; box-shadow: 0 0 14px rgba(160,108,240,.28); }
+    .pill.goat .pill-ball { animation: bob 1.6s ease-in-out infinite; }
+    @keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
     #scores { margin-top: auto; font-size: 13px; color: #b9c0cd; }
     #scores b { color: #e8ebf0; }
+    #goal { color: #8a93a6; font-size: 12px; }
+    /* Podium de fin de partie */
+    #podium { position: fixed; inset: 0; z-index: 30; display: flex; align-items: center;
+      justify-content: center; background: rgba(8,10,16,.9); backdrop-filter: blur(3px);
+      animation: fadein .3s ease; }
+    .podium-card { text-align: center; padding: 20px 24px; max-width: 320px; }
+    .podium-cup { font-size: 56px; animation: pop .5s cubic-bezier(.2,1.5,.4,1) both; }
+    .podium-title { font-size: 21px; font-weight: 800; margin: 4px 0 16px; color: #fff; }
+    .podium-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; }
+    .podium-list li { display: flex; justify-content: space-between; gap: 12px; padding: 9px 13px;
+      background: #171d2b; border-radius: 9px; font-size: 14px; }
+    .podium-list li.p1 { background: linear-gradient(90deg, #3a2f0a, #241d06);
+      border: 1px solid #c9a13a; font-weight: 700; }
+    .podium-list b { color: #ffd76a; }
+    .podium-sub { margin-top: 16px; color: #8a93a6; font-size: 12px; }
+    @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes pop { from { transform: scale(0) rotate(-25deg); } to { transform: scale(1) rotate(0); } }
   </style>
 </head>
 <body>
@@ -68,7 +101,15 @@
       <button id="skip" class="btn">⏭️ Passer (admin)</button>
       <button id="reveal" class="btn">👁️ Révéler</button>
     </div>
-    <div id="scores"><span class="k">Scores :</span> <span id="scores-v">–</span></div>
+    <div id="scores"><span class="k">Scores</span> <span id="goal"></span> : <span id="scores-v">–</span></div>
+  </div>
+  <div id="podium" hidden>
+    <div class="podium-card">
+      <div class="podium-cup">🏆</div>
+      <div class="podium-title"></div>
+      <ol class="podium-list"></ol>
+      <div class="podium-sub"></div>
+    </div>
   </div>
   <script src="/socket.io/socket.io.js"></script>
   <script src="app.js"></script>

@@ -9,6 +9,17 @@ function hintMessage(name, tier) {
   }
 }
 
+// Remplissage de la jauge (0-100 %) selon le palier et la distance en cartes.
+// Bandes croissantes avec le rang de la ball (Poké < Super < Hyper < Master),
+// pour que « plus la jauge est haute, meilleure est la ball ».
+function hintPct(tier, m) {
+  const lerp = (a, b, t) => a + (b - a) * Math.max(0, Math.min(1, t));
+  if (tier === 'goat')   return Math.round(lerp(100, 84, m / 2));         // Master
+  if (tier === 'warm')   return Math.round(lerp(82, 62, (m - 2) / 3));    // Hyper
+  if (tier === 'region') return Math.round(lerp(58, 30, (m - 5) / 25));   // Super
+  return Math.round(lerp(26, 6, (m - 5) / 30));                           // Poké (lost)
+}
+
 // Logique d'une partie : rounds, dézoom progressif, détection du gagnant.
 class Room {
   constructor(io, name, pack, config, filter) {
@@ -216,19 +227,43 @@ class Room {
       fx = (this.target.gx * ts + ts / 2 - rect.x) / rect.w;
       fy = (this.target.gy * ts + ts / 2 - rect.y) / rect.h;
     }
-    console.log(`[${this.name}] ${player.name} a trouvé en ${elapsed}s (+${pts} pts) !`);
+    // Fin de partie : premier à winScore points (0 = pas de limite).
+    const winScore = this.config.winScore || 0;
+    const gameOver = winScore > 0 && player.score >= winScore;
+    console.log(`[${this.name}] ${player.name} a trouvé en ${elapsed}s (+${pts} pts)${gameOver ? ' — PARTIE GAGNÉE' : ''} !`);
     this.channel().emit('round:won', {
       winner: player.name,
       elapsedSec: elapsed,
       points: pts,
+      gameOver,
       marker: { fx, fy },
       reveal: this.buildReveal(player.name),
       ...this.publicState(),
     });
     setTimeout(() => {
-      if (this.players.size > 0) this.startRound();
+      if (gameOver) this.endGame(player.name);
+      else if (this.players.size > 0) this.startRound();
       else this.phase = 'waiting';
     }, this.config.intermissionSec * 1000);
+  }
+
+  // Podium de fin de partie, puis remise à zéro et nouvelle partie.
+  endGame(winnerName) {
+    clearTimeout(this.zoomTimer);
+    this.phase = 'gameover';
+    const standings = [...this.players.values()]
+      .map((p) => ({ name: p.name, score: p.score }))
+      .sort((a, b) => b.score - a.score);
+    this.channel().emit('game:over', {
+      winner: winnerName, winScore: this.config.winScore,
+      seconds: this.config.podiumSec || 12, standings,
+    });
+    setTimeout(() => {
+      for (const p of this.players.values()) p.score = 0;
+      this.roundNum = 0;
+      if (this.players.size > 0) this.startRound();
+      else this.phase = 'waiting';
+    }, (this.config.podiumSec || 12) * 1000);
   }
 
   // Indices chaud/froid par joueur (pour le tableau affiché à chaque dézoom).
@@ -240,7 +275,12 @@ class Room {
       if (p.offline || !p.lastPos) continue;
       const h = this.pack.proximityHint(this.target, p.lastPos.mapID, p.lastPos.x, p.lastPos.y);
       if (!h) continue;
-      out.push({ name: p.name, tier: h.tier, message: hintMessage(p.name, h.tier) });
+      out.push({
+        name: p.name,
+        tier: h.tier,
+        pct: hintPct(h.tier, h.mapsAway),
+        message: hintMessage(p.name, h.tier),
+      });
     }
     return out;
   }
@@ -257,6 +297,7 @@ class Room {
       zoomIntervalSec: this.config.zoomIntervalSec,
       passVotes: this.passVotes.size,
       passNeeded: [...this.players.values()].filter((p) => !p.offline).length,
+      winScore: this.config.winScore || 0,
       hints: this.computeHints(),
       players: [...this.players.values()]
         .map((p) => ({ name: p.name, score: p.score, offline: !!p.offline }))
