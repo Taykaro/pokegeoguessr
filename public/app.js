@@ -11,6 +11,7 @@ let state = null;
 let cd = null;
 let adminKey = null;
 let myVoted = false;
+let myZoomVoted = false;
 
 // Solo / Multi : on masque tout ce qui révèle la réponse ou triche.
 if (!isAdmin) document.querySelectorAll('.admin-only').forEach((e) => (e.hidden = true));
@@ -60,6 +61,11 @@ function apply(s) {
   const pv = $('passvote');
   pv.textContent = myVoted ? `✅ En attente (${got}/${need})` : `🙋 Demander à passer (${got}/${need})`;
   pv.disabled = myVoted || s.phase !== 'playing';
+  const zgot = s.zoomVotes ?? 0;
+  const zv = $('zoomvote');
+  zv.textContent = s.atMaxZoom ? '🔍 Zoom max'
+    : (myZoomVoted ? `✅ Zoom (${zgot}/${need})` : `🔍 Zoom suivant (${zgot}/${need})`);
+  zv.disabled = s.atMaxZoom || myZoomVoted || s.phase !== 'playing';
   hints(s);
   img();
   countdown();
@@ -129,6 +135,7 @@ function countdown() {
 $('skip').onclick = () => socket.emit('admin:skip');
 $('reveal').onclick = () => { $('photo').src = `/img/${room}?full=1&key=${adminKey}&t=${Date.now()}`; };
 $('passvote').onclick = () => { myVoted = true; socket.emit('pass:request'); if (state) apply(state); };
+$('zoomvote').onclick = () => { myZoomVoted = true; socket.emit('zoom:request'); if (state) apply(state); };
 $('abandon').onclick = () => {
   socket.emit('leave');
   if (window.pokegeo && window.pokegeo.goToMenu) window.pokegeo.goToMenu();
@@ -149,7 +156,7 @@ socket.on('state', apply);
 socket.on('round:new', (s) => {
   $('banner').hidden = true; $('revealCanvas').hidden = true;
   $('podium').hidden = true; clearInterval(podiumCd);
-  myVoted = false; apply(s);
+  myVoted = false; myZoomVoted = false; apply(s);
 });
 
 // Podium de fin de partie (premier à N points).
@@ -173,6 +180,7 @@ socket.on('game:over', (d) => {
 socket.on('round:zoom', (s) => {
   const t = myTier(s);
   if (t && SND[t]) SND[t](); else SND.zoom();
+  myZoomVoted = false; // le dézoom a eu lieu -> les votes repartent
   apply(s);
 });
 socket.on('round:won', (d) => {

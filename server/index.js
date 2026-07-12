@@ -60,6 +60,12 @@ io.on('connection', (socket) => {
     if (joined) joined.room.requestPass(joined.name);
   });
 
+  // N'importe quel joueur : demande à dézoomer. Dézoom immédiat quand TOUS les
+  // joueurs connectés l'ont demandé.
+  socket.on('zoom:request', () => {
+    if (joined) joined.room.requestZoom(joined.name);
+  });
+
   // Abandon volontaire : quitte la room proprement (contrairement à une
   // déconnexion réseau qui garde la place pour se reconnecter).
   socket.on('leave', () => {

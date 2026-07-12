@@ -42,6 +42,10 @@ class Room {
     this.nextZoomAt = null;
     this.roundStartedAt = null;
     this.passVotes = new Set(); // noms (lowercase) des joueurs voulant passer ce round
+    this.zoomVotes = new Set(); // noms voulant dézoomer tout de suite
+    // Anti-répétition : évite de re-tirer les mêmes lieux à la suite.
+    this.recentFiles = []; // derniers fichiers photo tirés
+    this.recentZones = []; // dernières zones tirées
     // secret par room, distribué uniquement aux vrais admins — empêche de
     // récupérer l'image pleine (/img?full=1) en devinant juste l'URL.
     this.adminKey = Math.random().toString(36).slice(2) + Date.now().toString(36);
@@ -73,7 +77,8 @@ class Room {
     const p = this.players.get(socketId);
     if (p) p.offline = true;
     this.broadcastState();
-    this.checkPassThreshold(); // un joueur qui part peut débloquer le vote
+    this.checkPassThreshold(); // un joueur qui part peut débloquer les votes
+    this.checkZoomThreshold();
   }
 
   // Abandon volontaire : retire complètement le joueur (contrairement à une
@@ -82,6 +87,7 @@ class Room {
     this.players.delete(socketId);
     this.broadcastState();
     this.checkPassThreshold();
+    this.checkZoomThreshold();
   }
 
   findPlayerByName(playerName) {
@@ -97,7 +103,8 @@ class Room {
     this.phase = 'playing';
     this.level = 0;
     this.passVotes = new Set();
-    this.target = this.pack.randomTarget(this.filter);
+    this.zoomVotes = new Set();
+    this.target = this.pickTarget();
     this.crops = this.pack.roundCrops(this.target);
     this.roundStartedAt = Date.now();
     this.scheduleZoom();
@@ -109,6 +116,24 @@ class Room {
     );
     this.emitAdmin();
     this.startHintTicker();
+  }
+
+  // Tire une cible en évitant les répétitions récentes : jamais le même fichier
+  // que les 10 derniers, ni la même zone que les 4 derniers rounds (sinon on
+  // enchaîne des lieux qui se suivent). Repli sur un tirage libre si le filtre
+  // est trop restreint pour éviter les répétitions.
+  pickTarget() {
+    let t;
+    for (let tries = 0; tries < 20; tries++) {
+      t = this.pack.randomTarget(this.filter);
+      const repeat = this.recentFiles.includes(t.file) || this.recentZones.includes(t.zone);
+      if (!repeat) break;
+    }
+    this.recentFiles.push(t.file);
+    if (this.recentFiles.length > 10) this.recentFiles.shift();
+    this.recentZones.push(t.zone);
+    if (this.recentZones.length > 4) this.recentZones.shift();
+    return t;
   }
 
   // Rafraîchit les jauges chaud/froid en direct (toutes les 2 s) tant qu'on
@@ -137,9 +162,21 @@ class Room {
     this.nextZoomAt = Date.now() + ms;
     this.zoomTimer = setTimeout(() => {
       this.level++;
+      this.zoomVotes = new Set(); // le dézoom repart -> on remet les votes à zéro
       this.scheduleZoom();
       this.channel().emit('round:zoom', this.publicState());
     }, ms);
+  }
+
+  // Dézoom immédiat (déclenché par vote unanime) : passe au niveau suivant et
+  // relance le minuteur pour le niveau d'après.
+  advanceZoom() {
+    if (this.phase !== 'playing' || this.level >= this.crops.length - 1) return;
+    clearTimeout(this.zoomTimer);
+    this.level++;
+    this.zoomVotes = new Set();
+    this.scheduleZoom();
+    this.channel().emit('round:zoom', this.publicState());
   }
 
   currentImage() {
@@ -201,6 +238,26 @@ class Room {
     if (active.length > 0 && this.passVotes.size >= active.length) {
       console.log(`[${this.name}] vote unanime pour passer (${this.passVotes.size}/${active.length})`);
       this.startRound();
+    }
+  }
+
+  // --- Vote "zoom suivant" : dézoome tout de suite quand TOUS les joueurs
+  // connectés le demandent (raccourci le minuteur). ---
+  requestZoom(playerName) {
+    if (this.phase !== 'playing' || this.level >= this.crops.length - 1) return;
+    const player = this.findPlayerByName(playerName);
+    if (!player || player.offline) return;
+    this.zoomVotes.add(player.name.toLowerCase());
+    this.broadcastState();
+    this.checkZoomThreshold();
+  }
+
+  checkZoomThreshold() {
+    if (this.phase !== 'playing') return;
+    const active = [...this.players.values()].filter((p) => !p.offline);
+    if (active.length > 0 && this.zoomVotes.size >= active.length) {
+      console.log(`[${this.name}] vote unanime pour dézoomer (${this.zoomVotes.size}/${active.length})`);
+      this.advanceZoom();
     }
   }
 
@@ -321,6 +378,8 @@ class Room {
       zoomIntervalSec: this.config.zoomIntervalSec,
       passVotes: this.passVotes.size,
       passNeeded: [...this.players.values()].filter((p) => !p.offline).length,
+      zoomVotes: this.zoomVotes.size,
+      atMaxZoom: this.level >= this.pack.zoomLevels.length - 1,
       winScore: this.config.winScore || 0,
       difficulty: this.difficulty,
       hints: this.computeHints(),
