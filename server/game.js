@@ -105,6 +105,23 @@ class Room {
       (t.interior ? ` [intérieur ${t.zone} mapID ${t.mapID}]` : t.zone ? ` [${t.zone}]` : '')
     );
     this.emitAdmin();
+    this.startHintTicker();
+  }
+
+  // Rafraîchit les jauges chaud/froid en direct (toutes les 2 s) tant qu'on
+  // joue, pour qu'elles bougent quand les joueurs se déplacent (le dézoom est
+  // trop espacé). N'émet que si les indices ont changé (léger event 'hints').
+  startHintTicker() {
+    clearInterval(this.hintTimer);
+    this.lastHintsJson = '';
+    this.hintTimer = setInterval(() => {
+      if (this.phase !== 'playing') return;
+      const h = this.computeHints();
+      const j = JSON.stringify(h);
+      if (j === this.lastHintsJson) return;
+      this.lastHintsJson = j;
+      this.channel().emit('hints', h);
+    }, 2000);
   }
 
   scheduleZoom() {
@@ -212,6 +229,7 @@ class Room {
 
   win(player) {
     clearTimeout(this.zoomTimer);
+    clearInterval(this.hintTimer);
     this.phase = 'intermission';
     // Score au temps : trouvé tôt (photo encore très zoomée) = plus de points.
     // 4 niveaux de zoom -> 4,3,2,1 points selon le niveau atteint.
@@ -250,6 +268,7 @@ class Room {
   // Podium de fin de partie, puis remise à zéro et nouvelle partie.
   endGame(winnerName) {
     clearTimeout(this.zoomTimer);
+    clearInterval(this.hintTimer);
     this.phase = 'gameover';
     const standings = [...this.players.values()]
       .map((p) => ({ name: p.name, score: p.score }))

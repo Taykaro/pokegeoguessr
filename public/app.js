@@ -136,6 +136,13 @@ $('abandon').onclick = () => {
 // Repère mon propre palier chaud/froid dans l'état courant.
 function myTier(s) { const h = (s.hints || []).find((x) => x.name === myName); return h && h.tier; }
 
+// Rafraîchissement live des jauges chaud/froid (toutes les 2 s côté serveur).
+socket.on('hints', (arr) => {
+  if (!state || state.phase !== 'playing') return;
+  state.hints = arr;
+  hints(state);
+});
+
 socket.on('state', apply);
 socket.on('round:new', (s) => {
   $('banner').hidden = true; $('revealCanvas').hidden = true;
