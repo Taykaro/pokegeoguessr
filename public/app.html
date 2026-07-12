@@ -6,6 +6,9 @@
   <style>
     html, body { margin: 0; height: 100%; background: #0f1117; color: #e8ebf0;
       font-family: "Segoe UI", system-ui, sans-serif; overflow: hidden; }
+    /* L'attribut hidden doit toujours gagner, même sur les éléments à display: flex
+       (#podium, .btns) — sinon ils s'affichent en permanence. */
+    [hidden] { display: none !important; }
     #panel { height: 100%; box-sizing: border-box; display: flex; flex-direction: column;
       padding: 14px; gap: 12px; }
     #head { display: flex; justify-content: space-between; align-items: baseline; }
