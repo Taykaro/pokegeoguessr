@@ -98,7 +98,7 @@ $('abandon').onclick = () => {
 function myTier(s) { const h = (s.hints || []).find((x) => x.name === myName); return h && h.tier; }
 
 socket.on('state', apply);
-socket.on('round:new', (s) => { $('banner').hidden = true; $('reveal').hidden = true; myVoted = false; apply(s); });
+socket.on('round:new', (s) => { $('banner').hidden = true; $('revealCanvas').hidden = true; myVoted = false; apply(s); });
 socket.on('round:zoom', (s) => {
   const t = myTier(s);
   if (t && SND[t]) SND[t](); else SND.zoom();
@@ -116,7 +116,7 @@ socket.on('round:won', (d) => {
 
 // Révélation de fin de round : minimap du monde + position de la cible et des joueurs.
 function drawReveal(reveal) {
-  const cv = $('reveal');
+  const cv = $('revealCanvas');
   if (!reveal || !reveal.w || !reveal.target) { cv.hidden = true; return; }
   const wrap = $('photo-wrap');
   const W = wrap.clientWidth, H = wrap.clientHeight;
