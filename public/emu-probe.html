@@ -44,6 +44,9 @@
   <div class="card">
     <div class="big" id="pos">En attente de la ROM…</div>
     <div id="save" class="hint" style="margin-top:6px"></div>
+    <div style="height:10px"></div>
+    <button id="capture" style="width:100%;padding:10px;background:#2f6f4f;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer">💾 Capturer l'état (une fois en overworld) → me l'envoyer</button>
+    <div class="hint" style="margin-top:6px">Sert à créer le démarrage direct « comme l'exe » : entre en jeu (Continuer), va où tu veux, clique ce bouton, envoie-moi le fichier téléchargé.</div>
     <div style="height:8px"></div>
     <div id="diag">—</div>
   </div>
@@ -208,6 +211,22 @@ $('rom').addEventListener('change', (ev) => {
   const file = ev.target.files[0];
   if (!file) return;
   boot(URL.createObjectURL(file));
+});
+
+// Capture un savestate (pour créer le démarrage direct « comme l'exe »).
+$('capture').addEventListener('click', async () => {
+  try {
+    const gm = window.EJS_emulator && window.EJS_emulator.gameManager;
+    if (!gm || !gm.getState) { alert('Émulateur pas prêt'); return; }
+    let st = gm.getState();
+    if (st && typeof st.then === 'function') st = await st;
+    const bytes = st instanceof Uint8Array ? st : new Uint8Array(st);
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([bytes], { type: 'application/octet-stream' }));
+    a.download = 'soulsilver_overworld.state';
+    a.click();
+    $('save').textContent = '✅ État capturé (' + bytes.length + ' o) — envoie-moi le fichier téléchargé.';
+  } catch (e) { alert('Capture échouée : ' + e.message); }
 });
 
 // Test auto : ?romurl=/rom.nds&core=melonds  (pour valider la faisabilité)
