@@ -153,6 +153,7 @@ function injectSave(bytes) {
   if (!gm || !gm.FS || !gm.getSaveFilePath) return false;
   const FS = gm.FS;
   const path = gm.getSaveFilePath();
+  if (!path) return false;
   const parts = path.split('/');
   let cp = '';
   for (let i = 0; i < parts.length - 1; i++) {
@@ -163,19 +164,25 @@ function injectSave(bytes) {
   if (FS.analyzePath(path).exists) FS.unlink(path);
   FS.writeFile(path, bytes);
   gm.loadSaveFiles();
-  return true;
+  // vérifie que l'écriture a bien pris (bonne taille)
+  const a = FS.analyzePath(path);
+  return a.exists && FS.stat(path).size === bytes.length;
 }
 
 async function loadCompletedSave() {
   try {
     const resp = await fetch('soulsilver_fullcs_FR.sav');
-    if (!resp.ok) return;
+    if (!resp.ok) { $('save').textContent = '⚠️ Save introuvable (' + resp.status + ')'; return; }
     const bytes = new Uint8Array(await resp.arrayBuffer());
-    // le gameManager peut ne pas être prêt à la 1re frame -> petit retry
-    for (let i = 0; i < 20; i++) {
-      if (injectSave(bytes)) { $('save').textContent = '💾 Save « jeu terminé » chargée — fais Continuer dans le jeu'; return; }
+    for (let i = 0; i < 30; i++) {
+      if (injectSave(bytes)) {
+        $('save').innerHTML = '💾 Save « jeu terminé » injectée ✓ — '
+          + '<b>dans le jeu : touche l\'écran du bas pour passer, puis choisis CONTINUER</b> (pas Nouvelle partie).';
+        return;
+      }
       await new Promise(r => setTimeout(r, 300));
     }
+    $('save').textContent = '⚠️ Injection échouée (gameManager pas prêt)';
   } catch (e) { $('save').textContent = '⚠️ Save non chargée : ' + e.message; }
 }
 
