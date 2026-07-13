@@ -45,10 +45,10 @@
     <div class="big" id="pos">En attente de la ROM…</div>
     <div id="save" class="hint" style="margin-top:6px"></div>
     <div style="height:10px"></div>
-    <button id="loadsave" style="width:100%;padding:11px;background:#2b3550;color:#fff;border:1px solid #3a4665;border-radius:8px;font-size:14px;cursor:pointer">1️⃣ Charger ma partie terminée (à faire à l'ÉCRAN TITRE)</button>
+    <button id="loadsave" style="width:100%;padding:11px;background:#2b3550;color:#fff;border:1px solid #3a4665;border-radius:8px;font-size:14px;cursor:pointer">1️⃣ Installer ma partie (à l'écran titre) → puis RECHARGE la page</button>
     <div style="height:8px"></div>
     <button id="capture" style="width:100%;padding:11px;background:#2f6f4f;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer">2️⃣ Capturer l'état (une fois en overworld) → me l'envoyer</button>
-    <div class="hint" style="margin-top:6px">Objectif : créer le démarrage direct « comme l'exe ».<br>1) Attends l'écran titre → clique <b>1️⃣</b> → fais <b>Continuer</b> dans le jeu.<br>2) Une fois dehors, clique <b>2️⃣</b> → envoie-moi le fichier téléchargé.</div>
+    <div class="hint" style="margin-top:6px">Objectif : créer le démarrage direct « comme l'exe » (à faire une seule fois).<br>1) Attends l'écran titre → clique <b>1️⃣</b> → <b>recharge la page</b> + re-choisis ta ROM → dans le jeu, <b>Continuer</b>.<br>2) Une fois dehors (overworld), clique <b>2️⃣</b> → envoie-moi le fichier.</div>
     <div style="height:8px"></div>
     <div id="diag">—</div>
   </div>
@@ -174,21 +174,29 @@ function injectSave(bytes) {
   return a.exists && FS.stat(path).size === bytes.length;
 }
 
-async function loadCompletedSave() {
+// Installe la save "jeu terminé" dans le stockage PERSISTANT (IndexedDB) : au
+// prochain chargement, EmulatorJS la remet en place AVANT le boot du jeu (via
+// FS.syncfs(true) dans mountFileSystems) -> "Continuer" charge la partie sans
+// erreur. C'est le mécanisme officiel de persistance des saves d'EmulatorJS.
+async function installCompletedSave() {
   try {
+    const gm = window.EJS_emulator && window.EJS_emulator.gameManager;
+    if (!gm || !gm.FS || !gm.getSaveFilePath) { $('save').textContent = '⚠️ Émulateur pas prêt (attends l\'écran titre)'; return; }
     const resp = await fetch('soulsilver_fullcs_FR.sav');
     if (!resp.ok) { $('save').textContent = '⚠️ Save introuvable (' + resp.status + ')'; return; }
     const bytes = new Uint8Array(await resp.arrayBuffer());
-    for (let i = 0; i < 30; i++) {
-      if (injectSave(bytes)) {
-        $('save').innerHTML = '💾 Save « jeu terminé » injectée ✓ — '
-          + '<b>dans le jeu : touche l\'écran du bas pour passer, puis choisis CONTINUER</b> (pas Nouvelle partie).';
-        return;
-      }
-      await new Promise(r => setTimeout(r, 300));
-    }
-    $('save').textContent = '⚠️ Injection échouée (gameManager pas prêt)';
-  } catch (e) { $('save').textContent = '⚠️ Save non chargée : ' + e.message; }
+    const FS = gm.FS;
+    const path = gm.getSaveFilePath();
+    const parts = path.split('/'); let cp = '';
+    for (let i = 0; i < parts.length - 1; i++) { if (parts[i] === '') continue; cp += '/' + parts[i]; if (!FS.analyzePath(cp).exists) FS.mkdir(cp); }
+    if (FS.analyzePath(path).exists) FS.unlink(path);
+    FS.writeFile(path, bytes);
+    // persiste FS -> IndexedDB (sera relu au boot suivant, avant le jeu)
+    await new Promise((res, rej) => FS.syncfs(false, (e) => e ? rej(e) : res()));
+    $('save').innerHTML = '✅ Save installée et persistée dans le navigateur !<br>'
+      + '<b>Maintenant : recharge la page (F5), re-sélectionne ta ROM, puis dans le jeu fais Continuer.</b> '
+      + 'Cette fois ta partie chargera (la save est en place avant le boot).';
+  } catch (e) { $('save').textContent = '⚠️ ' + e.message; }
 }
 
 function boot(gameUrl, coreOverride) {
@@ -217,10 +225,10 @@ $('rom').addEventListener('change', (ev) => {
   boot(URL.createObjectURL(file));
 });
 
-// 1️⃣ Charge la save "jeu terminé" — à cliquer à l'écran titre (jeu au repos).
+// 1️⃣ Installe la save "jeu terminé" dans le stockage persistant, puis recharge.
 $('loadsave').addEventListener('click', () => {
-  $('save').textContent = '⏳ Chargement de la save…';
-  loadCompletedSave();
+  $('save').textContent = '⏳ Installation de la save…';
+  installCompletedSave();
 });
 
 // Capture un savestate (pour créer le démarrage direct « comme l'exe »).
