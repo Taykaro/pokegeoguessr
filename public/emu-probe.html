@@ -12,7 +12,9 @@
   label { display:block; font-size:13px; color:#8a93a6; margin-bottom:6px; }
   select, input[type=file] { width:100%; padding:8px; background:#0f1117; color:#e8ebf0;
     border:1px solid #2c3444; border-radius:8px; font-size:14px; box-sizing:border-box; }
-  #game { width:100%; aspect-ratio:4/3; background:#000; border-radius:10px; overflow:hidden; }
+  /* Écran DS empilé (haut+bas) = 256×384. Aspect correct -> pas de letterbox,
+     donc le suivi de la souris (stylet) sur l'écran du bas reste calibré. */
+  #game { width:min(100%, 420px); aspect-ratio:256/384; margin:0 auto; background:#000; border-radius:10px; overflow:hidden; }
   #diag { font-family:ui-monospace,Consolas,monospace; font-size:13px; white-space:pre-wrap; line-height:1.5; }
   .big { font-size:26px; font-weight:800; letter-spacing:.5px; }
   .ok { color:#7fd48c; } .bad { color:#ef6a6a; } .wait { color:#e0c62a; }
@@ -41,6 +43,7 @@
 
   <div class="card">
     <div class="big" id="pos">En attente de la ROM…</div>
+    <div id="save" class="hint" style="margin-top:6px"></div>
     <div style="height:8px"></div>
     <div id="diag">—</div>
   </div>
@@ -80,11 +83,26 @@ function reader(H, base) {
   const u32 = (a) => (u16(a) | (u16(a + 2) << 16)) >>> 0;
   return { u16, u32 };
 }
-// base valide = le pointeur de position pointe dans la main RAM (jeu en cours)
+// candidat = gamecode "IPGF" présent (vraie main RAM, même à l'écran-titre)
+function hasGamecode(H, base) {
+  return H[base + 0x3FFE0C] === 0x49 && H[base + 0x3FFE0D] === 0x50
+      && H[base + 0x3FFE0E] === 0x47 && H[base + 0x3FFE0F] === 0x46;
+}
+// base en jeu = les DEUX chaînes résolvent (position plausible ET mapID
+// plausible). Exiger les deux élimine les fausses bases (copies ROM du gamecode
+// dans le heap qui donneraient par hasard de petites valeurs) : seule la vraie
+// main RAM, en overworld, passe ce test.
 function validBase(H, base) {
-  const { u32 } = reader(H, base);
+  const { u16, u32 } = reader(H, base);
   const pb = u32(0x020231F8);
-  return pb >= 0x02000000 && pb < 0x02400000;
+  if (pb < 0x02000000 || pb >= 0x02400000) return false;
+  const X = u16(pb + 2), Y = u16(pb - 0x0E);
+  if (!(X < 2048 && Y < 2048)) return false;
+  const fsp = u32(0x021D1130);
+  if (fsp < 0x02100000 || fsp >= 0x02400000) return false;
+  const loc = u32(fsp + 0x20);
+  if (loc < 0x02100000 || loc >= 0x02400000) return false;
+  return u32(loc) < 600; // mapID plausible (0-540)
 }
 function readPos(H, base) {
   const { u16, u32 } = reader(H, base);
@@ -128,6 +146,39 @@ function startPolling() {
   }, 400);
 }
 
+// Injecte une SaveRAM (.sav) dans le FS d'EmulatorJS puis la recharge dans le
+// cœur (méthode RomM). Après ça, "Continuer" au titre charge la partie.
+function injectSave(bytes) {
+  const gm = window.EJS_emulator && window.EJS_emulator.gameManager;
+  if (!gm || !gm.FS || !gm.getSaveFilePath) return false;
+  const FS = gm.FS;
+  const path = gm.getSaveFilePath();
+  const parts = path.split('/');
+  let cp = '';
+  for (let i = 0; i < parts.length - 1; i++) {
+    if (parts[i] === '') continue;
+    cp += '/' + parts[i];
+    if (!FS.analyzePath(cp).exists) FS.mkdir(cp);
+  }
+  if (FS.analyzePath(path).exists) FS.unlink(path);
+  FS.writeFile(path, bytes);
+  gm.loadSaveFiles();
+  return true;
+}
+
+async function loadCompletedSave() {
+  try {
+    const resp = await fetch('soulsilver_fullcs_FR.sav');
+    if (!resp.ok) return;
+    const bytes = new Uint8Array(await resp.arrayBuffer());
+    // le gameManager peut ne pas être prêt à la 1re frame -> petit retry
+    for (let i = 0; i < 20; i++) {
+      if (injectSave(bytes)) { $('save').textContent = '💾 Save « jeu terminé » chargée — fais Continuer dans le jeu'; return; }
+      await new Promise(r => setTimeout(r, 300));
+    }
+  } catch (e) { $('save').textContent = '⚠️ Save non chargée : ' + e.message; }
+}
+
 function boot(gameUrl, coreOverride) {
   const CDN = 'https://cdn.emulatorjs.org/stable/data/';
   window.EJS_player = '#game';
@@ -137,7 +188,7 @@ function boot(gameUrl, coreOverride) {
   window.EJS_gameUrl = gameUrl;
   window.EJS_startOnLoaded = true;
   window.EJS_ready = () => { $('pos').textContent = '⏳ Prêt, démarrage…'; startPolling(); };
-  window.EJS_onGameStart = () => { startPolling(); };
+  window.EJS_onGameStart = () => { startPolling(); loadCompletedSave(); };
   const s = document.createElement('script');
   s.src = CDN + 'loader.js';
   document.body.appendChild(s);
