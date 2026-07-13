@@ -14,6 +14,16 @@ console.log(
 
 const app = express();
 app.use(express.json());
+// Isolation cross-origin pour la page émulateur navigateur (EmulatorJS / WASM
+// threads ont besoin de SharedArrayBuffer). Limité à cette page pour ne pas
+// impacter le reste du site. COEP credentialless = autorise le CDN sans CORP.
+app.use((req, res, next) => {
+  if (req.path === '/emu-probe.html' || req.path === '/play.html') {
+    res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+    res.setHeader('Cross-Origin-Embedder-Policy', 'credentialless');
+  }
+  next();
+});
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
 const server = http.createServer(app);
