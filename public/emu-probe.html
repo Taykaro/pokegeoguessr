@@ -45,8 +45,10 @@
     <div class="big" id="pos">En attente de la ROM…</div>
     <div id="save" class="hint" style="margin-top:6px"></div>
     <div style="height:10px"></div>
-    <button id="capture" style="width:100%;padding:10px;background:#2f6f4f;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer">💾 Capturer l'état (une fois en overworld) → me l'envoyer</button>
-    <div class="hint" style="margin-top:6px">Sert à créer le démarrage direct « comme l'exe » : entre en jeu (Continuer), va où tu veux, clique ce bouton, envoie-moi le fichier téléchargé.</div>
+    <button id="loadsave" style="width:100%;padding:11px;background:#2b3550;color:#fff;border:1px solid #3a4665;border-radius:8px;font-size:14px;cursor:pointer">1️⃣ Charger ma partie terminée (à faire à l'ÉCRAN TITRE)</button>
+    <div style="height:8px"></div>
+    <button id="capture" style="width:100%;padding:11px;background:#2f6f4f;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer">2️⃣ Capturer l'état (une fois en overworld) → me l'envoyer</button>
+    <div class="hint" style="margin-top:6px">Objectif : créer le démarrage direct « comme l'exe ».<br>1) Attends l'écran titre → clique <b>1️⃣</b> → fais <b>Continuer</b> dans le jeu.<br>2) Une fois dehors, clique <b>2️⃣</b> → envoie-moi le fichier téléchargé.</div>
     <div style="height:8px"></div>
     <div id="diag">—</div>
   </div>
@@ -198,7 +200,9 @@ function boot(gameUrl, coreOverride) {
   window.EJS_gameUrl = gameUrl;
   window.EJS_startOnLoaded = true;
   window.EJS_ready = () => { $('pos').textContent = '⏳ Prêt, démarrage…'; startPolling(); };
-  window.EJS_onGameStart = () => { startPolling(); loadCompletedSave(); };
+  // On n'injecte PLUS la save pendant le boot (ça cause l'"Erreur de
+  // communication"). Le joueur clique 1️⃣ à l'écran titre (jeu au repos).
+  window.EJS_onGameStart = () => { startPolling(); };
   const s = document.createElement('script');
   s.src = CDN + 'loader.js';
   document.body.appendChild(s);
@@ -211,6 +215,12 @@ $('rom').addEventListener('change', (ev) => {
   const file = ev.target.files[0];
   if (!file) return;
   boot(URL.createObjectURL(file));
+});
+
+// 1️⃣ Charge la save "jeu terminé" — à cliquer à l'écran titre (jeu au repos).
+$('loadsave').addEventListener('click', () => {
+  $('save').textContent = '⏳ Chargement de la save…';
+  loadCompletedSave();
 });
 
 // Capture un savestate (pour créer le démarrage direct « comme l'exe »).
