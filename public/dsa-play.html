@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PokéGeo — DS Anywhere</title>
+<style>
+  body { margin:0; background:#0f1117; color:#e8ebf0; font-family:"Segoe UI",system-ui,sans-serif; }
+  #wrap { max-width:520px; margin:0 auto; padding:14px; }
+  h1 { font-size:17px; }
+  .card { background:#161a24; border:1px solid #2c3444; border-radius:12px; padding:12px; margin:10px 0; }
+  input[type=file] { width:100%; padding:8px; background:#0f1117; color:#e8ebf0; border:1px solid #2c3444; border-radius:8px; box-sizing:border-box; }
+  #screens { display:flex; flex-direction:column; align-items:center; gap:2px; background:#000; border-radius:10px; padding:6px; }
+  #screens canvas { width:100%; max-width:420px; image-rendering:pixelated; display:block; }
+  .big { font-size:22px; font-weight:800; }
+  .ok { color:#7fd48c; } .wait { color:#e0c62a; }
+  .hint { font-size:12px; color:#8a93a6; }
+  #diag { font-family:ui-monospace,monospace; font-size:12px; white-space:pre-wrap; color:#8a93a6; }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <h1>🎮 PokéGeo — émulateur navigateur (DS Anywhere)</h1>
+  <p class="hint">Charge ta ROM SoulSilver (.nds). Ta partie terminée se charge automatiquement, sans installation. Reste sur ta machine, rien n'est envoyé.</p>
+  <div class="card">
+    <input id="rom" type="file" accept=".nds">
+  </div>
+  <div id="screens"><canvas id="top-screen" width="256" height="192"></canvas><canvas id="bottom-screen" width="256" height="192"></canvas></div>
+  <div class="card">
+    <div class="big" id="pos">En attente de la ROM…</div>
+    <div id="diag" style="margin-top:6px">—</div>
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+function loadScript(src) { return new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = () => rej(new Error('échec ' + src)); document.head.appendChild(s); }); }
+
+// --- Lecture RAM : localise la main RAM 4Mo dans Module.HEAPU8 via le gamecode
+//     "IPGF" (offset 0x3FFE0C), puis lit position/mapID (mêmes adresses que le pont). ---
+const HDR_OFF = 0x3FFE0C, RAM = 0x400000;
+function heap() { const M = window.Module; return M && M.HEAPU8 ? M.HEAPU8 : null; }
+function scanCandidates(H) {
+  const N = H.length, out = [];
+  for (let p = 0; p < N - 4; p++) {
+    if (H[p] === 0x49 && H[p + 1] === 0x50 && H[p + 2] === 0x47 && H[p + 3] === 0x46) {
+      const base = p - HDR_OFF; if (base >= 0 && base + RAM <= N) out.push(base);
+      if (out.length > 400) break;
+    }
+  }
+  return out;
+}
+function reader(H, base) {
+  const u8 = (a) => H[base + ((a - 0x02000000) & (RAM - 1))];
+  const u16 = (a) => u8(a) | (u8(a + 1) << 8);
+  const u32 = (a) => (u16(a) | (u16(a + 2) << 16)) >>> 0;
+  return { u16, u32 };
+}
+function validBase(H, base) {
+  const { u16, u32 } = reader(H, base);
+  const pb = u32(0x020231F8); if (pb < 0x02000000 || pb >= 0x02400000) return false;
+  const X = u16(pb + 2), Y = u16(pb - 0x0E); if (!(X < 2048 && Y < 2048)) return false;
+  const fsp = u32(0x021D1130); if (fsp < 0x02100000 || fsp >= 0x02400000) return false;
+  const loc = u32(fsp + 0x20); if (loc < 0x02100000 || loc >= 0x02400000) return false;
+  return u32(loc) < 600;
+}
+function readPos(H, base) {
+  const { u16, u32 } = reader(H, base); const out = {};
+  const b = u32(0x020231F8); if (b >= 0x02000000 && b < 0x02400000) { out.X = u16(b + 2); out.Y = u16(b - 0x0E); }
+  const fsp = u32(0x021D1130); if (fsp >= 0x02100000 && fsp < 0x02400000) { const loc = u32(fsp + 0x20); if (loc >= 0x02100000 && loc < 0x02400000) out.mapID = u32(loc); }
+  return out;
+}
+let candidates = [], lastHeapLen = 0, ramBase = null, polling = false;
+function startPolling() {
+  if (polling) return; polling = true;
+  setInterval(() => {
+    const H = heap(); if (!H) return;
+    if (H.length !== lastHeapLen) { lastHeapLen = H.length; candidates = scanCandidates(H); ramBase = null; }
+    if (ramBase === null || !validBase(H, ramBase)) { ramBase = null; for (const c of candidates) if (validBase(H, c)) { ramBase = c; break; } }
+    if (ramBase === null) { $('pos').className = 'big wait'; $('pos').textContent = candidates.length ? '⏳ En jeu…' : '⏳ Démarrage…'; return; }
+    const p = readPos(H, ramBase);
+    $('pos').className = 'big ok'; $('pos').textContent = `map:${p.mapID ?? '?'}  X:${p.X}  Y:${p.Y}`;
+    $('diag').textContent = JSON.stringify(p);
+  }, 200);
+}
+
+let romData = null;
+async function startWithRom(bytes) {
+  romData = bytes;
+  $('rom').disabled = true;
+  $('pos').textContent = '⏳ Chargement de l\'émulateur…';
+  try {
+    await loadScript('/dsa/wasmemulator.js');
+    await loadScript('/dsa/webmelon.js');
+    WebMelon.assembly.addLoadListener(boot);
+  } catch (e) { $('pos').textContent = '⚠️ ' + e.message; }
+}
+$('rom').addEventListener('change', async (ev) => {
+  const f = ev.target.files[0]; if (!f) return;
+  startWithRom(new Uint8Array(await f.arrayBuffer()));
+});
+// test auto : ?romurl=/rom.nds
+const _qp = new URLSearchParams(location.search);
+if (_qp.get('romurl')) fetch(_qp.get('romurl')).then(r => r.arrayBuffer()).then(b => startWithRom(new Uint8Array(b)));
+
+async function boot() {
+  try {
+    WebMelon.storage.createDirectory('/roms');
+    WebMelon.storage.createDirectory('/savefiles');
+    WebMelon.storage.mountIndexedDB('/savefiles');
+    const save = new Uint8Array(await (await fetch('/dsa/IPGF.sav')).arrayBuffer());
+    WebMelon.storage.write('/savefiles/IPGF.sav', save); // save terminée auto (nom = gamecode)
+    WebMelon.storage.write('/roms/game.nds', romData);
+    WebMelon.emulator.createEmulator();
+    WebMelon.emulator.loadFreeBIOS();
+    WebMelon.emulator.loadRom('/roms/game.nds');
+    WebMelon.emulator.startEmulation('top-screen', 'bottom-screen');
+    setInterval(WebMelon.storage.sync, 20000);
+    $('pos').textContent = '✅ Émulateur lancé — fais Continuer dans le jeu';
+    startPolling();
+  } catch (e) { $('pos').textContent = '⚠️ boot: ' + e.message; }
+}
+</script>
+</body>
+</html>

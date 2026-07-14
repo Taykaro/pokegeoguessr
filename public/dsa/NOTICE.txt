@@ -1,0 +1,4 @@
+Émulateur DS navigateur fourni par DS Anywhere (https://github.com/brxxn/ds-anywhere),
+un fork de melonDS (https://github.com/melonDS-emu/melonDS), sous licence GPLv3.
+BIOS libre : réimplémentation DraStic (voir freebios/ du projet DS Anywhere).
+Fichiers : wasmemulator.js, wasmemulator.wasm, webmelon.js.

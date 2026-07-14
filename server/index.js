@@ -18,7 +18,7 @@ app.use(express.json());
 // threads ont besoin de SharedArrayBuffer). Limité à cette page pour ne pas
 // impacter le reste du site. COEP credentialless = autorise le CDN sans CORP.
 app.use((req, res, next) => {
-  if (req.path === '/emu-probe.html' || req.path === '/play.html') {
+  if (req.path === '/emu-probe.html' || req.path === '/play.html' || req.path === '/dsa-play.html') {
     res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
     res.setHeader('Cross-Origin-Embedder-Policy', 'credentialless');
   }
