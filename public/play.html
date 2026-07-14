@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PokéGeoGuessr</title>
+<style>
+  html, body { margin:0; min-height:100%; background:#0f1117; color:#e8ebf0; font-family:"Segoe UI",system-ui,sans-serif; }
+  [hidden] { display:none !important; }
+  a { color:#7fb2ff; }
+  #head { display:flex; justify-content:space-between; align-items:center; padding:10px 14px; }
+  #head h1 { font-size:16px; margin:0; }
+  #mute { background:none; border:none; cursor:pointer; font-size:15px; }
+  /* menu */
+  #menu { max-width:420px; margin:6vh auto; padding:18px; }
+  #menu .sub { color:#8a93a6; font-size:14px; text-align:center; margin:0 0 14px; }
+  #menu label { display:block; font-size:12px; color:#8a93a6; margin:10px 0 4px; }
+  #menu input, #menu select { width:100%; box-sizing:border-box; padding:10px; background:#0f1117; color:#e8ebf0; border:1px solid #2c3444; border-radius:8px; font-size:14px; }
+  #menu .row { display:flex; gap:10px; } #menu .row > div { flex:1; }
+  #menu button { width:100%; margin-top:16px; padding:12px; background:#2f6f4f; color:#fff; border:none; border-radius:9px; font-size:15px; font-weight:700; cursor:pointer; }
+  #menu button:hover { background:#368059; }
+  .card { background:#161a24; border:1px solid #2c3444; border-radius:12px; padding:14px; }
+  /* jeu */
+  #game { display:flex; flex-wrap:wrap; gap:12px; padding:12px; align-items:flex-start; }
+  #left { flex:1 1 320px; min-width:280px; }
+  #right { flex:1 1 340px; min-width:300px; display:flex; flex-direction:column; gap:10px; }
+  #emuwrap { background:#000; border-radius:10px; padding:6px; display:flex; flex-direction:column; align-items:center; gap:2px; }
+  #emuwrap canvas { width:100%; max-width:400px; image-rendering:pixelated; display:block; }
+  #rompick { margin-bottom:8px; }
+  #rompick input { width:100%; box-sizing:border-box; padding:8px; background:#0f1117; color:#e8ebf0; border:1px solid #2c3444; border-radius:8px; }
+  #emustat { font-size:12px; color:#8a93a6; margin-top:6px; text-align:center; }
+  #photo-wrap { position:relative; width:100%; aspect-ratio:4/3; background:#000; border-radius:10px; overflow:hidden; }
+  #photo { width:100%; height:100%; object-fit:contain; image-rendering:pixelated; }
+  #revealCanvas { position:absolute; inset:0; width:100%; height:100%; background:#0b0e14; }
+  #banner { position:absolute; left:0; right:0; top:42%; text-align:center; font-size:20px; font-weight:bold; background:rgba(0,0,0,.55); padding:10px; }
+  #meta { display:flex; justify-content:space-between; font-size:13px; color:#b9c0cd; }
+  #hints { display:flex; flex-direction:column; gap:7px; } #hints:empty { display:none; }
+  .pill { display:flex; align-items:center; gap:10px; padding:8px 10px; background:linear-gradient(180deg,#1a2131,#141a27); border:1px solid #232c3f; border-radius:12px; }
+  .pill-ball { width:34px; height:34px; flex:none; } .pill-ball svg { display:block; filter:drop-shadow(0 1px 2px rgba(0,0,0,.5)); }
+  .pill-body { flex:1; min-width:0; }
+  .pill-top { display:flex; justify-content:space-between; align-items:baseline; gap:8px; }
+  .pill-name { font-weight:700; font-size:13px; color:#eef2f8; }
+  .pill-tier { font-size:11px; font-weight:700; color:var(--c); white-space:nowrap; }
+  .pill-track { height:9px; margin-top:5px; background:#0c1017; border-radius:99px; overflow:hidden; box-shadow:inset 0 1px 2px rgba(0,0,0,.6); }
+  .pill-fill { height:100%; width:0; border-radius:99px; background:linear-gradient(90deg,color-mix(in srgb,var(--c) 45%,#000),var(--c)); transition:width .9s cubic-bezier(.22,1,.36,1); }
+  .pill-msg { font-size:11px; color:#7f8aaa; font-style:italic; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:3px; opacity:.9; }
+  .pill.lost { --c:#ef5350; } .pill.region { --c:#4a90e2; } .pill.warm { --c:#f2c037; }
+  .pill.goat { --c:#b57bff; border-color:#6a3fb0; box-shadow:0 0 14px rgba(160,108,240,.28); }
+  .pill.goat .pill-ball { animation:bob 1.6s ease-in-out infinite; }
+  @keyframes bob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-2px)} }
+  .btns { display:flex; gap:8px; }
+  .btn { flex:1; padding:9px; background:#2b3550; color:#fff; border:1px solid #3a4665; border-radius:8px; cursor:pointer; font-size:13px; }
+  .btn:hover { background:#354065; } .btn:disabled { opacity:.55; cursor:default; }
+  .btn-danger { background:#5a2b2b; border-color:#6b3a3a; } .btn-danger:hover { background:#6b3535; }
+  #scores { font-size:13px; color:#b9c0cd; } #scores b { color:#e8ebf0; } #goal { color:#8a93a6; font-size:12px; }
+  #podium { position:fixed; inset:0; z-index:30; display:flex; align-items:center; justify-content:center; background:rgba(8,10,16,.9); backdrop-filter:blur(3px); animation:fadein .3s ease; }
+  .podium-card { text-align:center; padding:20px 24px; max-width:320px; }
+  .podium-cup { font-size:56px; animation:pop .5s cubic-bezier(.2,1.5,.4,1) both; }
+  .podium-title { font-size:21px; font-weight:800; margin:4px 0 16px; color:#fff; }
+  .podium-list { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:6px; }
+  .podium-list li { display:flex; justify-content:space-between; gap:12px; padding:9px 13px; background:#171d2b; border-radius:9px; font-size:14px; }
+  .podium-list li.p1 { background:linear-gradient(90deg,#3a2f0a,#241d06); border:1px solid #c9a13a; font-weight:700; } .podium-list b { color:#ffd76a; }
+  .podium-sub { margin-top:16px; color:#8a93a6; font-size:12px; }
+  @keyframes fadein { from{opacity:0} to{opacity:1} } @keyframes pop { from{transform:scale(0) rotate(-25deg)} to{transform:scale(1) rotate(0)} }
+</style>
+</head>
+<body>
+<div id="head"><h1>🎯 PokéGeoGuessr</h1><button id="mute" title="Sons">🔊</button></div>
+
+<!-- MENU -->
+<div id="menu" class="card">
+  <p class="sub">Crée ou rejoins une room, puis joue directement dans ton navigateur.</p>
+  <label>Ton pseudo</label>
+  <input id="m-name" maxlength="20" placeholder="Ex : Léo">
+  <label>Nom de la room</label>
+  <input id="m-room" maxlength="20" placeholder="Ex : soiree">
+  <div class="row">
+    <div><label>Région</label><select id="m-region"><option value="all">Tout</option><option value="johto">Johto</option><option value="kanto">Kanto</option></select></div>
+    <div><label>Lieux</label><select id="m-type"><option value="all">Tous</option><option value="ext">Extérieurs</option><option value="int">Intérieurs</option></select></div>
+  </div>
+  <label>Difficulté</label>
+  <select id="m-diff">
+    <option value="facile">Facile — jauge en direct</option>
+    <option value="moyen" selected>Moyen — jauge à chaque dézoom</option>
+    <option value="difficile">Difficile — aucune jauge</option>
+  </select>
+  <button id="m-go">🎮 Jouer</button>
+  <p class="sub" style="margin-top:12px">Le créateur de la room fixe la difficulté/région. Il te faudra ta ROM SoulSilver (.nds) — elle reste sur ta machine.</p>
+</div>
+
+<!-- JEU -->
+<div id="game" hidden>
+  <div id="left">
+    <div id="rompick" class="card"><input id="rom" type="file" accept=".nds"><div id="emustat">Choisis ta ROM SoulSilver (.nds) pour démarrer.</div></div>
+    <div id="emuwrap"><canvas id="top-screen" width="256" height="192"></canvas><canvas id="bottom-screen" width="256" height="192"></canvas></div>
+  </div>
+  <div id="right">
+    <div id="meta"><span>Objectif — Round <b id="round">–</b> · Zoom <b id="zoom">1</b>/4</span><span id="countdown"></span></div>
+    <div id="photo-wrap"><img id="photo" alt="Où est-ce ?"><canvas id="revealCanvas" hidden></canvas><div id="banner" hidden></div></div>
+    <div id="hints"></div>
+    <div class="btns"><button id="zoomvote" class="btn">🔍 Zoom suivant</button><button id="passvote" class="btn">🙋 Demander à passer</button></div>
+    <div class="btns"><button id="abandon" class="btn btn-danger">🏳️ Quitter</button></div>
+    <div id="scores"><span style="color:#8a93a6">Scores</span> <span id="goal"></span> : <span id="scores-v">–</span></div>
+  </div>
+</div>
+
+<!-- PODIUM -->
+<div id="podium" hidden><div class="podium-card"><div class="podium-cup">🏆</div><div class="podium-title"></div><ol class="podium-list"></ol><div class="podium-sub"></div></div></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+const socket = io();
+let myName = '', room = 'main', filter = { region:'all', type:'all', difficulty:'moyen' };
+let state = null, cd = null, myVoted = false, myZoomVoted = false, joined = false;
+
+// ---------- MENU / JOIN ----------
+(() => {
+  const qp = new URLSearchParams(location.search);
+  if (qp.get('name')) $('m-name').value = qp.get('name');
+  if (qp.get('room')) $('m-room').value = qp.get('room');
+})();
+$('m-go').onclick = () => {
+  const name = $('m-name').value.trim(); const rm = $('m-room').value.trim();
+  if (!name) return alert('Pseudo requis'); if (!rm) return alert('Nom de room requis');
+  myName = name; room = rm;
+  filter = { region: $('m-region').value, type: $('m-type').value, difficulty: $('m-diff').value };
+  socket.emit('join', { name: myName, room, filter }, (res) => {
+    if (res && res.ok) { joined = true; $('menu').hidden = true; $('game').hidden = false; apply(res.state); }
+    else alert('Connexion impossible' + (res && res.error ? ' : ' + res.error : ''));
+  });
+};
+
+// ---------- SONS ----------
+let muted = localStorage.getItem('pg_muted') === '1', actx = null;
+function ac(){ if(!actx) actx=new (window.AudioContext||window.webkitAudioContext)(); if(actx.state==='suspended')actx.resume(); return actx; }
+function tone(f,s,d,g=0.14,ty='sine'){ const c=ac(),o=c.createOscillator(),gn=c.createGain(); o.type=ty; o.frequency.value=f; const t0=c.currentTime+s; gn.gain.setValueAtTime(0,t0); gn.gain.linearRampToValueAtTime(g,t0+0.01); gn.gain.exponentialRampToValueAtTime(0.0001,t0+d); o.connect(gn); gn.connect(c.destination); o.start(t0); o.stop(t0+d+0.02); }
+function melody(ns){ if(muted)return; try{ let t=0; for(const [f,d,g] of ns){ tone(f,t,d,g); t+=d*0.85; } }catch{} }
+const SND = { zoom:()=>melody([[520,0.08,0.06]]), goat:()=>melody([[660,0.1],[880,0.12],[1175,0.16]]), warm:()=>melody([[590,0.1],[740,0.12]]), region:()=>melody([[440,0.14]]), lost:()=>melody([[300,0.14],[230,0.16]]), win:()=>melody([[784,0.12],[988,0.12],[1319,0.2],[1568,0.28]]), gameover:()=>melody([[523,0.14],[659,0.14],[784,0.14],[1047,0.18],[784,0.12],[1047,0.4]]) };
+function updateMute(){ $('mute').textContent = muted?'🔇':'🔊'; } updateMute();
+$('mute').onclick = () => { muted=!muted; localStorage.setItem('pg_muted',muted?'1':'0'); updateMute(); if(!muted)SND.zoom(); };
+document.addEventListener('click', ()=>{ try{ac();}catch{} }, { once:true });
+
+// ---------- UI JEU ----------
+function apply(s){
+  state = s;
+  $('round').textContent = s.round; $('zoom').textContent = s.level + 1;
+  $('scores-v').textContent = (s.players||[]).map(p=>`${p.name} ${p.score}`).join(' · ') || '–';
+  const diffLabel = { facile:'Facile', moyen:'Moyen', difficile:'Difficile' }[s.difficulty] || '';
+  const parts = [s.winScore?`premier à ${s.winScore}`:'', diffLabel].filter(Boolean);
+  $('goal').textContent = parts.length ? `(${parts.join(' · ')})` : '';
+  const need = s.passNeeded ?? 0, got = s.passVotes ?? 0;
+  const pv = $('passvote'); pv.textContent = myVoted ? `✅ En attente (${got}/${need})` : `🙋 Demander à passer (${got}/${need})`; pv.disabled = myVoted || s.phase!=='playing';
+  const zgot = s.zoomVotes ?? 0; const zv = $('zoomvote');
+  zv.textContent = s.atMaxZoom ? '🔍 Zoom max' : (myZoomVoted ? `✅ Zoom (${zgot}/${need})` : `🔍 Zoom suivant (${zgot}/${need})`);
+  zv.disabled = s.atMaxZoom || myZoomVoted || s.phase!=='playing';
+  hints(s); img(); countdown();
+}
+const BALL = { lost:'Poké Ball', region:'Super Ball', warm:'Hyper Ball', goat:'Master Ball' };
+function ballSVG(tier){
+  const top = { lost:'#ee1515', region:'#2a75bb', warm:'#feca1b', goat:'#7b3ff2' }[tier] || '#ee1515';
+  let deco='';
+  if(tier==='region') deco='<path d="M16,34 L50,46 L84,34" fill="none" stroke="#ee1515" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/>';
+  else if(tier==='warm') deco='<rect x="28" y="8" width="9" height="38" rx="2" fill="#222"/><rect x="63" y="8" width="9" height="38" rx="2" fill="#222"/>';
+  else if(tier==='goat') deco='<circle cx="33" cy="22" r="4.5" fill="#ff6ec7"/><circle cx="67" cy="22" r="4.5" fill="#ff6ec7"/><text x="50" y="42" text-anchor="middle" font-size="26" font-weight="900" fill="#ff6ec7">M</text>';
+  return `<svg viewBox="0 0 100 100" width="34" height="34"><circle cx="50" cy="50" r="46" fill="#f6f6f6" stroke="#141414" stroke-width="5"/><path d="M4,50 A46,46 0 0 1 96,50 Z" fill="${top}" stroke="#141414" stroke-width="5"/>${deco}<rect x="5" y="45.5" width="90" height="9" fill="#141414"/><circle cx="50" cy="50" r="15" fill="#f6f6f6" stroke="#141414" stroke-width="5"/><circle cx="50" cy="50" r="6.5" fill="#fff" stroke="#141414" stroke-width="3"/></svg>`;
+}
+function hints(s){
+  const box = $('hints'); const list = (s.phase==='playing' && s.hints) ? s.hints : [];
+  const existing = {}; for(const el of [...box.children]) existing[el.dataset.name]=el;
+  const seen = new Set();
+  for(const h of list){
+    seen.add(h.name); let pill=existing[h.name], isNew=false;
+    if(!pill){ isNew=true; pill=document.createElement('div'); pill.dataset.name=h.name;
+      pill.innerHTML='<div class="pill-ball"></div><div class="pill-body"><div class="pill-top"><span class="pill-name"></span><span class="pill-tier"></span></div><div class="pill-track"><div class="pill-fill"></div></div><div class="pill-msg"></div></div>';
+      box.appendChild(pill); }
+    pill.className='pill '+h.tier;
+    pill.querySelector('.pill-ball').innerHTML=ballSVG(h.tier);
+    pill.querySelector('.pill-name').textContent=h.name;
+    pill.querySelector('.pill-tier').textContent=BALL[h.tier]||'';
+    pill.querySelector('.pill-msg').textContent=h.message;
+    const fill=pill.querySelector('.pill-fill'); if(isNew) void fill.offsetWidth; fill.style.width=(h.pct||0)+'%';
+  }
+  for(const el of [...box.children]) if(!seen.has(el.dataset.name)) el.remove();
+}
+function img(){ $('photo').src = `/img/${room}?t=${Date.now()}`; }
+function countdown(){
+  clearInterval(cd); const el=$('countdown');
+  if(!state || !state.nextZoomAt){ el.textContent='zoom max'; return; }
+  const t=()=>{ const s=Math.max(0,Math.round((state.nextZoomAt-Date.now())/1000)); el.textContent=`dézoom ${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`; };
+  t(); cd=setInterval(t,1000);
+}
+$('passvote').onclick = () => { myVoted=true; socket.emit('pass:request'); if(state)apply(state); };
+$('zoomvote').onclick = () => { myZoomVoted=true; socket.emit('zoom:request'); if(state)apply(state); };
+$('abandon').onclick = () => { socket.emit('leave'); location.reload(); };
+function myTier(s){ const h=(s.hints||[]).find(x=>x.name===myName); return h&&h.tier; }
+
+socket.on('hints', (arr)=>{ if(!state||state.phase!=='playing')return; state.hints=arr; hints(state); });
+socket.on('state', apply);
+socket.on('round:new', (s)=>{ $('banner').hidden=true; $('revealCanvas').hidden=true; $('podium').hidden=true; clearInterval(podiumCd); myVoted=false; myZoomVoted=false; apply(s); });
+let podiumCd = null;
+const esc = (t)=>String(t).replace(/[&<>]/g,(c)=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+socket.on('game:over', (d)=>{
+  SND.gameover(); const p=$('podium');
+  p.querySelector('.podium-title').innerHTML=`Victoire de <b>${esc(d.winner)}</b> !`;
+  const medals=['🥇','🥈','🥉'];
+  p.querySelector('.podium-list').innerHTML=(d.standings||[]).map((s,i)=>`<li class="${i===0?'p1':''}"><span>${medals[i]||(i+1)+'.'} ${esc(s.name)}</span><b>${s.score}</b></li>`).join('');
+  const sub=p.querySelector('.podium-sub'); let sec=d.seconds||12; clearInterval(podiumCd);
+  const tick=()=>{ sub.textContent=`Nouvelle partie dans ${Math.max(0,sec)}s…`; if(sec-- <=0)clearInterval(podiumCd); };
+  tick(); podiumCd=setInterval(tick,1000); p.hidden=false;
+});
+socket.on('round:zoom', (s)=>{ const t=myTier(s); if(t&&SND[t])SND[t](); else SND.zoom(); myZoomVoted=false; apply(s); });
+socket.on('round:won', (d)=>{ apply(d); SND.win(); const b=$('banner'); const pts=d.points?` +${d.points} pt${d.points>1?'s':''}`:''; b.textContent=`🎉 ${d.winner}${pts} en ${d.elapsedSec}s`; b.hidden=false; drawReveal(d.reveal); });
+function drawReveal(reveal){
+  const cv=$('revealCanvas'); if(!reveal||!reveal.w||!reveal.target){ cv.hidden=true; return; }
+  const wrap=$('photo-wrap'); const W=wrap.clientWidth,H=wrap.clientHeight; cv.width=W; cv.height=H; cv.hidden=false;
+  const ctx=cv.getContext('2d'); ctx.fillStyle='#0b0e14'; ctx.fillRect(0,0,W,H);
+  const im=new Image();
+  im.onload=()=>{
+    const scale=Math.min(W/reveal.w,H/reveal.h); const dw=reveal.w*scale,dh=reveal.h*scale; const ox=(W-dw)/2,oy=(H-dh)/2;
+    ctx.imageSmoothingEnabled=false; ctx.globalAlpha=0.55; ctx.drawImage(im,ox,oy,dw,dh); ctx.globalAlpha=1;
+    const P=(gx,gy)=>[ox+gx*scale,oy+gy*scale];
+    const [tx,ty]=P(reveal.target.gx,reveal.target.gy);
+    ctx.strokeStyle='#ff4d4d'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(tx,ty,9,0,7); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(tx-13,ty); ctx.lineTo(tx+13,ty); ctx.moveTo(tx,ty-13); ctx.lineTo(tx,ty+13); ctx.stroke();
+    ctx.fillStyle='#ff8a8a'; ctx.font='bold 11px system-ui'; ctx.textAlign='center'; ctx.fillText((reveal.interior?'🚪 ':'')+(reveal.zone||'cible'),tx,ty+22);
+    for(const pl of reveal.players){ const [px,py]=P(pl.gx,pl.gy); ctx.fillStyle=pl.won?'#ffd54a':'#4c9ef0'; ctx.beginPath(); ctx.arc(px,py,pl.won?6:5,0,7); ctx.fill(); ctx.strokeStyle='#0b0e14'; ctx.lineWidth=1.5; ctx.stroke(); ctx.fillStyle='#e8ebf0'; ctx.font='11px system-ui'; ctx.textAlign='center'; ctx.fillText(pl.name,px,py-9); }
+  };
+  im.src='/minimap';
+}
+
+// ---------- ÉMULATEUR (DS Anywhere) + RELAIS DE POSITION ----------
+function loadScript(src){ return new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=src; s.onload=res; s.onerror=()=>rej(new Error('échec '+src)); document.head.appendChild(s); }); }
+const HDR_OFF=0x3FFE0C, RAM=0x400000;
+function heap(){ const M=window.Module; return M&&M.HEAPU8?M.HEAPU8:null; }
+function scanCandidates(H){ const N=H.length,out=[]; for(let p=0;p<N-4;p++){ if(H[p]===0x49&&H[p+1]===0x50&&H[p+2]===0x47&&H[p+3]===0x46){ const b=p-HDR_OFF; if(b>=0&&b+RAM<=N)out.push(b); if(out.length>400)break; } } return out; }
+function reader(H,base){ const u8=a=>H[base+((a-0x02000000)&(RAM-1))]; const u16=a=>u8(a)|(u8(a+1)<<8); const u32=a=>(u16(a)|(u16(a+2)<<16))>>>0; return {u16,u32}; }
+function validBase(H,base){ const {u16,u32}=reader(H,base); const pb=u32(0x020231F8); if(pb<0x02000000||pb>=0x02400000)return false; const X=u16(pb+2),Y=u16(pb-0x0E); if(!(X<2048&&Y<2048))return false; const fsp=u32(0x021D1130); if(fsp<0x02100000||fsp>=0x02400000)return false; const loc=u32(fsp+0x20); if(loc<0x02100000||loc>=0x02400000)return false; return u32(loc)<600; }
+function readPos(H,base){ const {u16,u32}=reader(H,base); const out={}; const b=u32(0x020231F8); if(b>=0x02000000&&b<0x02400000){ out.X=u16(b+2); out.Y=u16(b-0x0E); } const fsp=u32(0x021D1130); if(fsp>=0x02100000&&fsp<0x02400000){ const loc=u32(fsp+0x20); if(loc>=0x02100000&&loc<0x02400000)out.mapID=u32(loc); } return out; }
+let candidates=[], lastHeapLen=0, ramBase=null, polling=false, lastPosKey='';
+function startPolling(){
+  if(polling)return; polling=true;
+  setInterval(()=>{
+    const H=heap(); if(!H)return;
+    if(H.length!==lastHeapLen){ lastHeapLen=H.length; candidates=scanCandidates(H); ramBase=null; }
+    if(ramBase===null||!validBase(H,ramBase)){ ramBase=null; for(const c of candidates) if(validBase(H,c)){ ramBase=c; break; } }
+    if(ramBase===null){ $('emustat').textContent='⏳ En jeu ? Fais Continuer et marche…'; return; }
+    const p=readPos(H,ramBase);
+    if(p.X===undefined)return;
+    $('emustat').textContent=`✅ Ta position : map ${p.mapID ?? '?'} — (${p.X}, ${p.Y})`;
+    const key=(p.mapID??0)+','+p.X+','+p.Y;
+    if(joined && key!==lastPosKey){ lastPosKey=key; socket.emit('pos',{ mapID:p.mapID??0, x:p.X, y:p.Y }); }
+  }, 200);
+}
+let romData=null;
+$('rom').addEventListener('change', async (ev)=>{
+  const f=ev.target.files[0]; if(!f)return;
+  romData=new Uint8Array(await f.arrayBuffer()); $('rom').disabled=true;
+  $('emustat').textContent='⏳ Chargement de l\'émulateur…';
+  try{ await loadScript('/dsa/wasmemulator.js'); await loadScript('/dsa/webmelon.js'); WebMelon.assembly.addLoadListener(boot); }
+  catch(e){ $('emustat').textContent='⚠️ '+e.message; }
+});
+function boot(){
+  WebMelon.storage.onPrepare(async ()=>{
+    try{
+      WebMelon.storage.createDirectory('/roms'); WebMelon.storage.write('/roms/game.nds', romData);
+      WebMelon.cart.createCart(); WebMelon.cart.loadFileIntoCart('/roms/game.nds');
+      const code=WebMelon.cart.getUnloadedCartCode();
+      const save=new Uint8Array(await (await fetch('/dsa/IPGF.sav')).arrayBuffer());
+      WebMelon.storage.write('/savefiles/'+code+'.sav', save);
+      WebMelon.emulator.createEmulator(); WebMelon.emulator.setSavePath('/savefiles/'+code+'.sav');
+      WebMelon.emulator.loadFreeBIOS(); WebMelon.emulator.loadCart();
+      WebMelon.emulator.startEmulation('top-screen','bottom-screen');
+      setInterval(WebMelon.storage.sync, 20000);
+      $('emustat').textContent='✅ Émulateur lancé — fais Continuer dans le jeu';
+      startPolling();
+    }catch(e){ $('emustat').textContent='⚠️ boot: '+e.message; }
+  });
+  WebMelon.storage.prepareVirtualFilesystem();
+}
+</script>
+</body>
+</html>
