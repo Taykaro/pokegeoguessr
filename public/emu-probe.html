@@ -48,7 +48,7 @@
     <button id="loadsave" style="width:100%;padding:11px;background:#2b3550;color:#fff;border:1px solid #3a4665;border-radius:8px;font-size:14px;cursor:pointer">1️⃣ Installer ma partie (à l'écran titre) → puis RECHARGE la page</button>
     <div style="height:8px"></div>
     <button id="capture" style="width:100%;padding:11px;background:#2f6f4f;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer">2️⃣ Capturer manuellement (secours)</button>
-    <div class="hint" style="margin-top:6px">Objectif : créer le démarrage direct « comme l'exe » (une seule fois).<br>1) Écran titre → clique <b>1️⃣</b> → <b>recharge</b> + re-choisis ta ROM → dans le jeu, <b>Continuer</b>.<br>➡️ <b>Dès que ta partie s'affiche, la page GÈLE le jeu et télécharge le savestate automatiquement</b> (avant l'erreur). Envoie-moi ce fichier. Le 2️⃣ n'est qu'un secours.</div>
+    <div class="hint" style="margin-top:6px">Objectif : créer le démarrage direct « comme l'exe » (une seule fois).<br>1) Écran titre → clique <b>1️⃣</b> → <b>recharge (Ctrl+Maj+R)</b> + re-choisis ta ROM → dans le jeu, <b>Continuer</b>.<br>➡️ <b style="color:#7fd48c">Dès que ta partie s'affiche (tu as ~2 s), MARTÈLE la touche C</b> (ou clique 2️⃣) → ça gèle le jeu + télécharge le savestate <b>avant le crash</b>. Envoie-moi ce fichier. (La capture auto s'essaie aussi en //.)</div>
     <div style="height:8px"></div>
     <div id="diag">—</div>
   </div>
@@ -272,7 +272,11 @@ $('loadsave').addEventListener('click', () => {
 });
 
 // Capture manuelle (secours) — même fonction que la capture auto.
-$('capture').addEventListener('click', () => { pauseEmu(); doCapture('manuel'); });
+$('capture').addEventListener('click', () => { pauseEmu(); doCapture('bouton'); });
+// Capture au clavier : appuie sur C quand ta partie s'affiche (gèle + capture).
+document.addEventListener('keydown', (e) => {
+  if ((e.key === 'c' || e.key === 'C') && !e.repeat) { pauseEmu(); doCapture('touche C'); }
+}, true);
 
 // Test auto : ?romurl=/rom.nds&core=melonds  (pour valider la faisabilité)
 const qp = new URLSearchParams(location.search);
