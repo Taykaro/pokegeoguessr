@@ -47,8 +47,8 @@
     <div style="height:10px"></div>
     <button id="loadsave" style="width:100%;padding:11px;background:#2b3550;color:#fff;border:1px solid #3a4665;border-radius:8px;font-size:14px;cursor:pointer">1️⃣ Installer ma partie (à l'écran titre) → puis RECHARGE la page</button>
     <div style="height:8px"></div>
-    <button id="capture" style="width:100%;padding:11px;background:#2f6f4f;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer">2️⃣ Capturer l'état (une fois en overworld) → me l'envoyer</button>
-    <div class="hint" style="margin-top:6px">Objectif : créer le démarrage direct « comme l'exe » (à faire une seule fois).<br>1) Attends l'écran titre → clique <b>1️⃣</b> → <b>recharge la page</b> + re-choisis ta ROM → dans le jeu, <b>Continuer</b>.<br>2) Une fois dehors (overworld), clique <b>2️⃣</b> → envoie-moi le fichier.</div>
+    <button id="capture" style="width:100%;padding:11px;background:#2f6f4f;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer">2️⃣ Capturer manuellement (secours)</button>
+    <div class="hint" style="margin-top:6px">Objectif : créer le démarrage direct « comme l'exe » (une seule fois).<br>1) Écran titre → clique <b>1️⃣</b> → <b>recharge</b> + re-choisis ta ROM → dans le jeu, <b>Continuer</b>.<br>➡️ <b>Dès que ta partie s'affiche, la page GÈLE le jeu et télécharge le savestate automatiquement</b> (avant l'erreur). Envoie-moi ce fichier. Le 2️⃣ n'est qu'un secours.</div>
     <div style="height:8px"></div>
     <div id="diag">—</div>
   </div>
@@ -122,7 +122,32 @@ function readPos(H, base) {
   return out;
 }
 
-let candidates = [], lastHeapLen = 0, ramBase = null, polling = false;
+// Capture un savestate (état complet) et le télécharge.
+async function doCapture(reason) {
+  try {
+    const gm = window.EJS_emulator && window.EJS_emulator.gameManager;
+    if (!gm || !gm.getState) return false;
+    let st = gm.getState();
+    if (st && typeof st.then === 'function') st = await st;
+    const bytes = st instanceof Uint8Array ? st : new Uint8Array(st);
+    if (!bytes || !bytes.length) return false;
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([bytes], { type: 'application/octet-stream' }));
+    a.download = 'soulsilver_overworld.state';
+    a.click();
+    $('save').innerHTML = '🎉 <b>État capturé (' + bytes.length + ' o, ' + reason + ') — ENVOIE-MOI le fichier !</b>';
+    return true;
+  } catch (e) { $('save').textContent = '⚠️ Capture: ' + e.message; return false; }
+}
+function pauseEmu() {
+  try {
+    const e = window.EJS_emulator;
+    if (e && typeof e.pause === 'function') e.pause();
+    else if (e && e.gameManager && e.gameManager.toggleMainLoop) e.gameManager.toggleMainLoop(0);
+  } catch {}
+}
+
+let candidates = [], lastHeapLen = 0, ramBase = null, polling = false, autoDone = false, autoCapture = true;
 function startPolling() {
   if (polling) return; polling = true;
   setInterval(() => {
@@ -130,7 +155,6 @@ function startPolling() {
     const M = getModule();
     const H = M && M.HEAPU8;
     if (!H) { pos.className = 'big wait'; pos.textContent = '⏳ Émulateur en cours de chargement…'; return; }
-    // (re)scan seulement si le heap a changé de taille (les offsets bougent)
     if (H.length !== lastHeapLen) { lastHeapLen = H.length; candidates = scanCandidates(H); ramBase = null; }
     if (ramBase === null || !validBase(H, ramBase)) {
       ramBase = null;
@@ -139,16 +163,20 @@ function startPolling() {
     if (ramBase === null) {
       pos.className = 'big wait';
       pos.textContent = candidates.length
-        ? `✅ Main RAM trouvée (${candidates.length} cand.) — entre en jeu (overworld) pour voir X/Y`
+        ? `✅ Main RAM trouvée (${candidates.length} cand.) — entre en jeu (overworld)…`
         : '⏳ Recherche de la main RAM…';
       diag.textContent = JSON.stringify({ heapMB: (H.length / 1048576).toFixed(0), candidates: candidates.length, ramBase }, null, 2);
       return;
     }
     const p = readPos(H, ramBase);
     if (p.X === undefined) { pos.className = 'big wait'; pos.textContent = '✅ RAM lisible — pas encore en overworld'; }
-    else { pos.className = 'big ok'; pos.textContent = `map:${p.mapID ?? '?'}  X:${p.X}  Y:${p.Y}`; }
+    else {
+      pos.className = 'big ok'; pos.textContent = `map:${p.mapID ?? '?'}  X:${p.X}  Y:${p.Y}`;
+      // Overworld détecté → PAUSE immédiate (fige AVANT l'erreur de comm.) + capture savestate.
+      if (autoCapture && !autoDone) { autoDone = true; pauseEmu(); doCapture('auto, ému gelé'); }
+    }
     diag.textContent = JSON.stringify({ heapMB: (H.length / 1048576).toFixed(0), ramBase, ...p }, null, 2);
-  }, 400);
+  }, 40);
 }
 
 // Injecte une SaveRAM (.sav) dans le FS d'EmulatorJS puis la recharge dans le
@@ -243,21 +271,8 @@ $('loadsave').addEventListener('click', () => {
   installCompletedSave();
 });
 
-// Capture un savestate (pour créer le démarrage direct « comme l'exe »).
-$('capture').addEventListener('click', async () => {
-  try {
-    const gm = window.EJS_emulator && window.EJS_emulator.gameManager;
-    if (!gm || !gm.getState) { alert('Émulateur pas prêt'); return; }
-    let st = gm.getState();
-    if (st && typeof st.then === 'function') st = await st;
-    const bytes = st instanceof Uint8Array ? st : new Uint8Array(st);
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([bytes], { type: 'application/octet-stream' }));
-    a.download = 'soulsilver_overworld.state';
-    a.click();
-    $('save').textContent = '✅ État capturé (' + bytes.length + ' o) — envoie-moi le fichier téléchargé.';
-  } catch (e) { alert('Capture échouée : ' + e.message); }
-});
+// Capture manuelle (secours) — même fonction que la capture auto.
+$('capture').addEventListener('click', () => { pauseEmu(); doCapture('manuel'); });
 
 // Test auto : ?romurl=/rom.nds&core=melonds  (pour valider la faisabilité)
 const qp = new URLSearchParams(location.search);
