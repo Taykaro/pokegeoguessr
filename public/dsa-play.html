@@ -103,22 +103,32 @@ $('rom').addEventListener('change', async (ev) => {
 const _qp = new URLSearchParams(location.search);
 if (_qp.get('romurl')) fetch(_qp.get('romurl')).then(r => r.arrayBuffer()).then(b => startWithRom(new Uint8Array(b)));
 
-async function boot() {
-  try {
-    WebMelon.storage.createDirectory('/roms');
-    WebMelon.storage.createDirectory('/savefiles');
-    WebMelon.storage.mountIndexedDB('/savefiles');
-    const save = new Uint8Array(await (await fetch('/dsa/IPGF.sav')).arrayBuffer());
-    WebMelon.storage.write('/savefiles/IPGF.sav', save); // save terminée auto (nom = gamecode)
-    WebMelon.storage.write('/roms/game.nds', romData);
-    WebMelon.emulator.createEmulator();
-    WebMelon.emulator.loadFreeBIOS();
-    WebMelon.emulator.loadRom('/roms/game.nds');
-    WebMelon.emulator.startEmulation('top-screen', 'bottom-screen');
-    setInterval(WebMelon.storage.sync, 20000);
-    $('pos').textContent = '✅ Émulateur lancé — fais Continuer dans le jeu';
-    startPolling();
-  } catch (e) { $('pos').textContent = '⚠️ boot: ' + e.message; }
+function boot() {
+  // Prépare le système de fichiers virtuel (firmware + savefiles), puis boote
+  // dans le callback onPrepare (séquence exacte du frontend DS Anywhere).
+  WebMelon.storage.onPrepare(async () => {
+    try {
+      // 1. ROM dans /roms + charge-la dans la cartouche pour lire son gamecode
+      WebMelon.storage.createDirectory('/roms');
+      WebMelon.storage.write('/roms/game.nds', romData);
+      WebMelon.cart.createCart();
+      WebMelon.cart.loadFileIntoCart('/roms/game.nds');
+      const code = WebMelon.cart.getUnloadedCartCode(); // ex. "IPGF"
+      // 2. Save terminée dans /savefiles/<gamecode>.sav (auto, sans import)
+      const save = new Uint8Array(await (await fetch('/dsa/IPGF.sav')).arrayBuffer());
+      WebMelon.storage.write('/savefiles/' + code + '.sav', save);
+      // 3. Émulateur : setSavePath (l'étape clé), BIOS libre, cartouche, start
+      WebMelon.emulator.createEmulator();
+      WebMelon.emulator.setSavePath('/savefiles/' + code + '.sav');
+      WebMelon.emulator.loadFreeBIOS();
+      WebMelon.emulator.loadCart();
+      WebMelon.emulator.startEmulation('top-screen', 'bottom-screen');
+      setInterval(WebMelon.storage.sync, 20000);
+      $('pos').textContent = '✅ Émulateur lancé (' + code + ') — fais Continuer';
+      startPolling();
+    } catch (e) { $('pos').textContent = '⚠️ boot: ' + e.message; }
+  });
+  WebMelon.storage.prepareVirtualFilesystem();
 }
 </script>
 </body>
