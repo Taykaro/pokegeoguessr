@@ -174,6 +174,7 @@ const $ = (id) => document.getElementById(id);
 const socket = io();
 let myName = '', room = 'main', filter = { region:'all', type:'all', difficulty:'moyen' };
 let state = null, cd = null, myVoted = false, myZoomVoted = false, joined = false;
+let cdSecs = 0, cdKey = ''; // décompte local propre à la manche (compteur serveur)
 
 // ---------- MENU / JOIN ----------
 (() => {
@@ -252,16 +253,19 @@ function hints(s){
   for(const el of [...box.children]) if(!seen.has(el.dataset.name)) el.remove();
 }
 function img(){ $('photo').src = `/img/${room}?t=${Date.now()}`; }
-// Décompte LOCAL à partir du temps restant envoyé par le serveur. On ne compare
-// plus un timestamp serveur à l'horloge locale : le moindre décalage d'horloge
-// donnait des chronos aberrants (« dézoom 481:19 »).
+// Décompte propre à la manche : le serveur envoie un COMPTEUR (secondes restantes,
+// pas une heure), le client le décrémente localement. On ne redémarre le décompte
+// qu'au changement de manche/niveau (ou grosse dérive = reconnexion) pour éviter
+// les à-coups à chaque broadcast. Aucun timestamp d'horloge en jeu.
 function countdown(){
-  clearInterval(cd); const el=$('countdown');
-  const start = state && state.zoomInSec;
-  if(start===null || start===undefined){ el.textContent='zoom max'; return; }
-  let s = Math.max(0, start);
-  const t=()=>{ el.textContent=`dézoom ${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`; if(s>0)s--; };
-  t(); cd=setInterval(t,1000);
+  const el=$('countdown');
+  const left = state && state.zoomInSec;
+  if(left===null || left===undefined){ clearInterval(cd); cd=null; cdKey=''; el.textContent='zoom max'; return; }
+  const key = state.round+':'+state.level;
+  if(key!==cdKey || Math.abs(left-cdSecs)>1){ cdKey=key; cdSecs=Math.max(0,left); }
+  const render=()=>{ el.textContent=`dézoom ${Math.floor(cdSecs/60)}:${String(cdSecs%60).padStart(2,'0')}`; };
+  render();
+  if(!cd) cd=setInterval(()=>{ if(cdSecs>0)cdSecs--; render(); }, 1000);
 }
 $('passvote').onclick = () => { myVoted=true; socket.emit('pass:request'); if(state)apply(state); };
 $('zoomvote').onclick = () => { myZoomVoted=true; socket.emit('zoom:request'); if(state)apply(state); };

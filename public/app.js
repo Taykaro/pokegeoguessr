@@ -9,6 +9,7 @@ const isAdmin = params.get('admin') === '1';
 const filter = { region: params.get('region') || 'all', type: params.get('type') || 'all', difficulty: params.get('difficulty') || 'moyen' };
 let state = null;
 let cd = null;
+let cdSecs = 0, cdKey = ''; // décompte local propre à la manche (compteur serveur)
 let adminKey = null;
 let myVoted = false;
 let myZoomVoted = false;
@@ -121,20 +122,18 @@ function hints(s) {
   for (const el of [...box.children]) if (!seen.has(el.dataset.name)) el.remove();
 }
 function img() { $('photo').src = `/img/${room}?t=${Date.now()}`; }
-// Décompte LOCAL depuis le temps restant envoyé par le serveur : comparer un
-// timestamp serveur à l'horloge locale donnait des chronos aberrants dès que
-// les horloges divergeaient (vu : « dézoom 481:19 »).
+// Décompte propre à la manche : le serveur envoie un COMPTEUR (secondes restantes),
+// le client le décrémente localement, sans jamais lire d'heure. On ne resynchronise
+// qu'au changement de manche/niveau (ou grosse dérive) pour un affichage fluide.
 function countdown() {
-  clearInterval(cd);
   const el = $('countdown');
-  const start = state && state.zoomInSec;
-  if (start === null || start === undefined) { el.textContent = 'zoom max'; return; }
-  let s = Math.max(0, start);
-  const t = () => {
-    el.textContent = `dézoom ${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
-    if (s > 0) s--;
-  };
-  t(); cd = setInterval(t, 1000);
+  const left = state && state.zoomInSec;
+  if (left === null || left === undefined) { clearInterval(cd); cd = null; cdKey = ''; el.textContent = 'zoom max'; return; }
+  const key = state.round + ':' + state.level;
+  if (key !== cdKey || Math.abs(left - cdSecs) > 1) { cdKey = key; cdSecs = Math.max(0, left); }
+  const render = () => { el.textContent = `dézoom ${Math.floor(cdSecs / 60)}:${String(cdSecs % 60).padStart(2, '0')}`; };
+  render();
+  if (!cd) cd = setInterval(() => { if (cdSecs > 0) cdSecs--; render(); }, 1000);
 }
 
 $('skip').onclick = () => socket.emit('admin:skip');

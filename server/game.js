@@ -45,8 +45,8 @@ class Room {
     this.target = null;
     this.level = 0;
     this.crops = [];
-    this.zoomTimer = null;
-    this.nextZoomAt = null;
+    this.zoomClock = null;   // interval 1s : décompte propre à la manche
+    this.secondsLeft = null; // secondes avant le prochain dézoom (compteur game)
     this.roundStartedAt = null;
     this.passVotes = new Set(); // noms (lowercase) des joueurs voulant passer ce round
     this.zoomVotes = new Set(); // noms voulant dézoomer tout de suite
@@ -171,7 +171,7 @@ class Room {
   }
 
   startRound() {
-    clearTimeout(this.zoomTimer);
+    clearInterval(this.zoomClock);
     this.roundNum++;
     this.phase = 'playing';
     this.level = 0;
@@ -226,29 +226,31 @@ class Room {
     }, 2000);
   }
 
+  // Minuteur de dézoom = COMPTEUR propre à la manche, décrémenté seconde par
+  // seconde par la game elle-même. On ne calcule plus le temps à partir d'une
+  // horloge (nextZoomAt/Date.now()) : le décompte appartient à la partie et ne
+  // dépend d'aucune heure « globale ».
   scheduleZoom() {
-    const ms = this.config.zoomIntervalSec * 1000;
+    clearInterval(this.zoomClock);
     if (this.level >= this.crops.length - 1) {
-      this.nextZoomAt = null;
+      this.secondsLeft = null; // au zoom max, plus de décompte
       return;
     }
-    this.nextZoomAt = Date.now() + ms;
-    this.zoomTimer = setTimeout(() => {
-      this.level++;
-      this.zoomVotes = new Set(); // le dézoom repart -> on remet les votes à zéro
-      this.scheduleZoom();
-      this.channel().emit('round:zoom', this.publicState());
-    }, ms);
+    this.secondsLeft = this.config.zoomIntervalSec;
+    this.zoomClock = setInterval(() => {
+      if (this.phase !== 'playing') return;
+      this.secondsLeft--;
+      if (this.secondsLeft <= 0) this.advanceZoom(); // 0 atteint -> dézoom
+    }, 1000);
   }
 
-  // Dézoom immédiat (déclenché par vote unanime) : passe au niveau suivant et
-  // relance le minuteur pour le niveau d'après.
+  // Dézoom (vote unanime OU compteur à 0) : passe au niveau suivant et réarme le
+  // compteur de manche pour le niveau d'après.
   advanceZoom() {
     if (this.phase !== 'playing' || this.level >= this.crops.length - 1) return;
-    clearTimeout(this.zoomTimer);
     this.level++;
     this.zoomVotes = new Set();
-    this.scheduleZoom();
+    this.scheduleZoom(); // réarme le compteur (ou le stoppe au zoom max)
     this.channel().emit('round:zoom', this.publicState());
   }
 
@@ -371,7 +373,7 @@ class Room {
   }
 
   win(player) {
-    clearTimeout(this.zoomTimer);
+    clearInterval(this.zoomClock);
     clearInterval(this.hintTimer);
     this.phase = 'intermission';
     // Score au temps : trouvé tôt (photo encore très zoomée) = plus de points.
@@ -410,7 +412,7 @@ class Room {
 
   // Podium de fin de partie, puis remise à zéro et nouvelle partie.
   endGame(winnerName) {
-    clearTimeout(this.zoomTimer);
+    clearInterval(this.zoomClock);
     clearInterval(this.hintTimer);
     this.phase = 'gameover';
     const standings = [...this.players.values()]
@@ -459,9 +461,10 @@ class Room {
       // Temps restant RELATIF (secondes) : le client décompte lui-même. Un
       // timestamp absolu dépendait de l'accord des horloges client/serveur —
       // le moindre décalage donnait des chronos aberrants (vu : « 481:19 »).
-      zoomInSec: this.nextZoomAt ? Math.max(0, Math.round((this.nextZoomAt - Date.now()) / 1000)) : null,
-      // conservé pour les anciens clients déjà distribués (exe) qui l'utilisent
-      nextZoomAt: this.nextZoomAt,
+      // compteur propre à la manche (pas d'horloge) : le client décompte de là
+      zoomInSec: this.secondsLeft,
+      // reconstruit pour les anciens clients (exe) qui lisent encore nextZoomAt
+      nextZoomAt: this.secondsLeft != null ? Date.now() + this.secondsLeft * 1000 : null,
       zoomIntervalSec: this.config.zoomIntervalSec,
       passVotes: this.countVotes(this.passVotes),
       passNeeded: this.activePlayers().length,
