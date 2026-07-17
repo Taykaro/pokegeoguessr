@@ -43,6 +43,7 @@ const SND = {
   lost: () => melody([[300, 0.14], [230, 0.16]]),                 // descendant "raté"
   win: () => melody([[784, 0.12], [988, 0.12], [1319, 0.2], [1568, 0.28]]),
   gameover: () => melody([[523, 0.14], [659, 0.14], [784, 0.14], [1047, 0.18], [784, 0.12], [1047, 0.4]]),
+  found: () => melody([[880, 0.09], [1175, 0.11]]),                // alerte "quelqu'un a trouvé"
 };
 function updateMute() { $('mute').textContent = muted ? '🔇' : '🔊'; }
 updateMute();
@@ -61,15 +62,34 @@ function apply(s) {
   const need = s.passNeeded ?? 0, got = s.passVotes ?? 0;
   const pv = $('passvote');
   pv.textContent = myVoted ? `✅ En attente (${got}/${need})` : `🙋 Demander à passer (${got}/${need})`;
-  pv.disabled = myVoted || s.phase !== 'playing';
+  pv.disabled = myVoted || s.phase !== 'playing' || s.clutchActive;
   const zgot = s.zoomVotes ?? 0;
   const zv = $('zoomvote');
   zv.textContent = s.atMaxZoom ? '🔍 Zoom max'
     : (myZoomVoted ? `✅ Zoom (${zgot}/${need})` : `🔍 Zoom suivant (${zgot}/${need})`);
-  zv.disabled = s.atMaxZoom || myZoomVoted || s.phase !== 'playing';
+  zv.disabled = s.atMaxZoom || myZoomVoted || s.phase !== 'playing' || s.clutchActive;
   hints(s);
   img();
   countdown();
+  updateClutch(s);
+}
+// Barre de la fenêtre « clutch » (quelqu'un a trouvé, les autres ont un délai).
+let clutchSecs = 0, clutchTick = null;
+function updateClutch(s) {
+  const bar = $('clutchbar');
+  if (!s || !s.clutchActive) { clearInterval(clutchTick); clutchTick = null; bar.hidden = true; return; }
+  if (!clutchTick || Math.abs((s.clutchInSec || 0) - clutchSecs) > 1) clutchSecs = Math.max(0, s.clutchInSec || 0);
+  const mine = (s.found || []).find((f) => f.name === myName);
+  const first = (s.found || [])[0];
+  const render = () => {
+    const t = `0:${String(clutchSecs).padStart(2, '0')}`;
+    bar.innerHTML = mine
+      ? `✅ Trouvé <b>+${mine.pts}</b> — en attente des autres… <b>${t}</b>`
+      : `🎉 <b>${first ? first.name : ''}</b> a trouvé ! Rejoins-le vite — <b>${t}</b>`;
+    bar.hidden = false;
+  };
+  render();
+  if (!clutchTick) clutchTick = setInterval(() => { if (clutchSecs > 0) clutchSecs--; render(); }, 1000);
 }
 // Jauge chaud/froid par joueur : une ball (Poké < Super < Hyper < Master) +
 // une barre de proximité animée. Plus le joueur est proche, plus la ball monte.
@@ -158,10 +178,12 @@ socket.on('hints', (arr) => {
 
 socket.on('state', apply);
 socket.on('round:new', (s) => {
-  $('banner').hidden = true; $('revealCanvas').hidden = true;
-  $('podium').hidden = true; clearInterval(podiumCd);
+  $('banner').hidden = true; $('clutchbar').hidden = true; $('revealCanvas').hidden = true;
+  $('podium').hidden = true; clearInterval(podiumCd); clearInterval(clutchTick); clutchTick = null;
   myVoted = false; myZoomVoted = false; apply(s);
 });
+// Quelqu'un vient de trouver : son (le reste de l'UI clutch passe par apply()).
+socket.on('round:found', (d) => { if (d.name === myName) SND.win(); else SND.found(); });
 
 // Podium de fin de partie (premier à N points).
 let podiumCd = null;
@@ -188,11 +210,13 @@ socket.on('round:zoom', (s) => {
   apply(s);
 });
 socket.on('round:won', (d) => {
+  clearInterval(clutchTick); clutchTick = null; $('clutchbar').hidden = true;
   apply(d);
   SND.win();
   const b = $('banner');
-  const pts = d.points ? ` +${d.points} pt${d.points > 1 ? 's' : ''}` : '';
-  b.textContent = `🎉 ${d.winner}${pts} en ${d.elapsedSec}s`;
+  const found = d.found || [];
+  const extra = found.length > 1 ? ` · +${found.length - 1} au clutch` : '';
+  b.innerHTML = found.length ? `🏁 ${esc(d.winner)} +${found[0].pts}${extra}` : '🏁 personne n\'a trouvé';
   b.hidden = false;
   drawReveal(d.reveal);
 });

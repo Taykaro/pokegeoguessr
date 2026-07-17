@@ -34,6 +34,9 @@
   #photo { width:100%; height:100%; object-fit:contain; image-rendering:pixelated; }
   #revealCanvas { position:absolute; inset:0; width:100%; height:100%; background:#0b0e14; }
   #banner { position:absolute; left:0; right:0; top:42%; text-align:center; font-size:20px; font-weight:bold; background:rgba(0,0,0,.55); padding:10px; }
+  /* barre clutch en haut de la photo (ne cache pas le centre : on doit encore lire la photo pour courir) */
+  #clutchbar { position:absolute; left:0; right:0; top:0; z-index:3; text-align:center; font-size:14px; font-weight:700; color:#fff; padding:7px 8px; background:linear-gradient(180deg,rgba(6,8,14,.9),rgba(6,8,14,.35),rgba(6,8,14,0)); text-shadow:0 1px 3px #000; animation:fadein .25s ease; }
+  #clutchbar b { color:#ffd76a; }
   #meta { display:flex; justify-content:space-between; font-size:13px; color:#b9c0cd; }
   #hints { display:flex; flex-direction:column; gap:7px; } #hints:empty { display:none; }
   .pill { display:flex; align-items:center; gap:10px; padding:8px 10px; background:linear-gradient(180deg,#1a2131,#141a27); border:1px solid #232c3f; border-radius:12px; }
@@ -142,7 +145,7 @@
   </div>
   <div id="right">
     <div id="meta"><span>Objectif — Round <b id="round">–</b> · Zoom <b id="zoom">1</b>/4</span><span id="countdown"></span></div>
-    <div id="photo-wrap"><img id="photo" alt="Où est-ce ?"><canvas id="revealCanvas" hidden></canvas><div id="banner" hidden></div></div>
+    <div id="photo-wrap"><img id="photo" alt="Où est-ce ?"><canvas id="revealCanvas" hidden></canvas><div id="clutchbar" hidden></div><div id="banner" hidden></div></div>
     <div id="hints"></div>
     <div class="btns"><button id="zoomvote" class="btn">🔍 Zoom suivant</button><button id="passvote" class="btn">🙋 Demander à passer</button></div>
     <div class="btns"><button id="abandon" class="btn btn-danger">🏳️ Quitter</button></div>
@@ -198,7 +201,7 @@ let muted = localStorage.getItem('pg_muted') === '1', actx = null;
 function ac(){ if(!actx) actx=new (window.AudioContext||window.webkitAudioContext)(); if(actx.state==='suspended')actx.resume(); return actx; }
 function tone(f,s,d,g=0.14,ty='sine'){ const c=ac(),o=c.createOscillator(),gn=c.createGain(); o.type=ty; o.frequency.value=f; const t0=c.currentTime+s; gn.gain.setValueAtTime(0,t0); gn.gain.linearRampToValueAtTime(g,t0+0.01); gn.gain.exponentialRampToValueAtTime(0.0001,t0+d); o.connect(gn); gn.connect(c.destination); o.start(t0); o.stop(t0+d+0.02); }
 function melody(ns){ if(muted)return; try{ let t=0; for(const [f,d,g] of ns){ tone(f,t,d,g); t+=d*0.85; } }catch{} }
-const SND = { zoom:()=>melody([[520,0.08,0.06]]), goat:()=>melody([[660,0.1],[880,0.12],[1175,0.16]]), warm:()=>melody([[590,0.1],[740,0.12]]), region:()=>melody([[440,0.14]]), lost:()=>melody([[300,0.14],[230,0.16]]), win:()=>melody([[784,0.12],[988,0.12],[1319,0.2],[1568,0.28]]), gameover:()=>melody([[523,0.14],[659,0.14],[784,0.14],[1047,0.18],[784,0.12],[1047,0.4]]) };
+const SND = { zoom:()=>melody([[520,0.08,0.06]]), goat:()=>melody([[660,0.1],[880,0.12],[1175,0.16]]), warm:()=>melody([[590,0.1],[740,0.12]]), region:()=>melody([[440,0.14]]), lost:()=>melody([[300,0.14],[230,0.16]]), win:()=>melody([[784,0.12],[988,0.12],[1319,0.2],[1568,0.28]]), gameover:()=>melody([[523,0.14],[659,0.14],[784,0.14],[1047,0.18],[784,0.12],[1047,0.4]]), found:()=>melody([[880,0.09],[1175,0.11]]) };
 function updateMute(){ $('mute').textContent = muted?'🔇':'🔊'; } updateMute();
 $('mute').onclick = () => { muted=!muted; localStorage.setItem('pg_muted',muted?'1':'0'); updateMute(); if(!muted)SND.zoom(); };
 document.addEventListener('click', ()=>{ try{ac();}catch{} }, { once:true });
@@ -219,11 +222,30 @@ function apply(s){
   const parts = [s.winScore?`premier à ${s.winScore}`:'', diffLabel].filter(Boolean);
   $('goal').textContent = parts.length ? `(${parts.join(' · ')})` : '';
   const need = s.passNeeded ?? 0, got = s.passVotes ?? 0;
-  const pv = $('passvote'); pv.textContent = myVoted ? `✅ En attente (${got}/${need})` : `🙋 Demander à passer (${got}/${need})`; pv.disabled = myVoted || s.phase!=='playing';
+  const pv = $('passvote'); pv.textContent = myVoted ? `✅ En attente (${got}/${need})` : `🙋 Demander à passer (${got}/${need})`; pv.disabled = myVoted || s.phase!=='playing' || s.clutchActive;
   const zgot = s.zoomVotes ?? 0; const zv = $('zoomvote');
   zv.textContent = s.atMaxZoom ? '🔍 Zoom max' : (myZoomVoted ? `✅ Zoom (${zgot}/${need})` : `🔍 Zoom suivant (${zgot}/${need})`);
-  zv.disabled = s.atMaxZoom || myZoomVoted || s.phase!=='playing';
-  hints(s); img(); countdown();
+  zv.disabled = s.atMaxZoom || myZoomVoted || s.phase!=='playing' || s.clutchActive;
+  hints(s); img(); countdown(); updateClutch(s);
+}
+// Bannière de la fenêtre « clutch » : quelqu'un a trouvé, les autres ont un court
+// délai pour arriver aussi. Compteur local (resync sur clutchInSec, sans horloge).
+let clutchSecs = 0, clutchTick = null;
+function updateClutch(s){
+  const bar = $('clutchbar');
+  if(!s || !s.clutchActive){ clearInterval(clutchTick); clutchTick=null; bar.hidden=true; return; }
+  if(!clutchTick || Math.abs((s.clutchInSec||0)-clutchSecs)>1) clutchSecs = Math.max(0, s.clutchInSec||0);
+  const mine = (s.found||[]).find(f=>f.name===myName);
+  const first = (s.found||[])[0];
+  const render = ()=>{
+    const t = `0:${String(clutchSecs).padStart(2,'0')}`;
+    bar.innerHTML = mine
+      ? `✅ Trouvé <b>+${mine.pts}</b> — en attente des autres… <b>${t}</b>`
+      : `🎉 <b>${esc(first?first.name:'')}</b> a trouvé ! Rejoins-le vite — <b>${t}</b>`;
+    bar.hidden = false;
+  };
+  render();
+  if(!clutchTick) clutchTick = setInterval(()=>{ if(clutchSecs>0)clutchSecs--; render(); }, 1000);
 }
 const BALL = { lost:'Poké Ball', region:'Super Ball', warm:'Hyper Ball', goat:'Master Ball' };
 function ballSVG(tier){
@@ -274,7 +296,9 @@ function myTier(s){ const h=(s.hints||[]).find(x=>x.name===myName); return h&&h.
 
 socket.on('hints', (arr)=>{ if(!state||state.phase!=='playing')return; state.hints=arr; hints(state); });
 socket.on('state', apply);
-socket.on('round:new', (s)=>{ $('banner').hidden=true; $('revealCanvas').hidden=true; $('podium').hidden=true; clearInterval(podiumCd); myVoted=false; myZoomVoted=false; apply(s); });
+socket.on('round:new', (s)=>{ $('banner').hidden=true; $('clutchbar').hidden=true; $('revealCanvas').hidden=true; $('podium').hidden=true; clearInterval(podiumCd); clearInterval(clutchTick); clutchTick=null; myVoted=false; myZoomVoted=false; apply(s); });
+// Quelqu'un vient de trouver : son + (le reste de l'UI clutch passe par apply()).
+socket.on('round:found', (d)=>{ if(d.name===myName) SND.win(); else SND.found(); });
 let podiumCd = null;
 const esc = (t)=>String(t).replace(/[&<>]/g,(c)=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 socket.on('game:over', (d)=>{
@@ -287,7 +311,15 @@ socket.on('game:over', (d)=>{
   tick(); podiumCd=setInterval(tick,1000); p.hidden=false;
 });
 socket.on('round:zoom', (s)=>{ const t=myTier(s); if(t&&SND[t])SND[t](); else SND.zoom(); myZoomVoted=false; apply(s); });
-socket.on('round:won', (d)=>{ apply(d); SND.win(); const b=$('banner'); const pts=d.points?` +${d.points} pt${d.points>1?'s':''}`:''; b.textContent=`🎉 ${d.winner}${pts} en ${d.elapsedSec}s`; b.hidden=false; drawReveal(d.reveal); });
+socket.on('round:won', (d)=>{
+  clearInterval(clutchTick); clutchTick=null; $('clutchbar').hidden=true; // fin de la fenêtre clutch
+  apply(d); SND.win();
+  const b=$('banner'); const found=d.found||[];
+  const extra = found.length>1 ? ` · +${found.length-1} au clutch` : '';
+  const head = found.length ? `🏁 ${esc(d.winner)} +${found[0].pts}${extra}` : '🏁 personne n\'a trouvé';
+  b.innerHTML = head; b.hidden=false;
+  drawReveal(d.reveal);
+});
 function drawReveal(reveal){
   const cv=$('revealCanvas'); if(!reveal||!reveal.w||!reveal.target){ cv.hidden=true; return; }
   const wrap=$('photo-wrap'); const W=wrap.clientWidth,H=wrap.clientHeight; cv.width=W; cv.height=H; cv.hidden=false;

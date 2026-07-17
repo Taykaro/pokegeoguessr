@@ -47,6 +47,13 @@ class Room {
     this.crops = [];
     this.zoomClock = null;   // interval 1s : décompte propre à la manche
     this.secondsLeft = null; // secondes avant le prochain dézoom (compteur game)
+    // Fenêtre « clutch » : après la 1re trouvaille, les autres ont un court délai
+    // pour arriver aussi et marquer des points partiels.
+    this.clutchActive = false;
+    this.clutchLeft = null;   // secondes restantes de la fenêtre (compteur game)
+    this.clutchClock = null;  // interval 1s
+    this.found = [];          // [{name, pts, order}] dans l'ordre d'arrivée
+    this.foundNames = new Set();
     this.roundStartedAt = null;
     this.passVotes = new Set(); // noms (lowercase) des joueurs voulant passer ce round
     this.zoomVotes = new Set(); // noms voulant dézoomer tout de suite
@@ -172,11 +179,16 @@ class Room {
 
   startRound() {
     clearInterval(this.zoomClock);
+    clearInterval(this.clutchClock);
     this.roundNum++;
     this.phase = 'playing';
     this.level = 0;
     this.passVotes = new Set();
     this.zoomVotes = new Set();
+    this.clutchActive = false;
+    this.clutchLeft = null;
+    this.found = [];
+    this.foundNames = new Set();
     this.target = this.pickTarget();
     this.crops = this.pack.roundCrops(this.target);
     this.roundStartedAt = Date.now();
@@ -275,9 +287,11 @@ class Room {
     player.lastPosAt = Date.now();
     this.emitAdmin();
     if (this.phase !== 'playing' || !this.target) return;
+    if (this.foundNames.has(player.name.toLowerCase())) return; // déjà trouvé
     const margin = this.config.marginTiles ?? this.pack.marginTiles;
     if (this.pack.checkWin(this.target, mapID, Number(x), Number(y), margin)) {
-      this.win(player);
+      if (this.clutchActive) this.clutchFind(player);
+      else this.firstFind(player);
     }
   }
 
@@ -301,7 +315,7 @@ class Room {
   // --- Vote "passer" : il faut que TOUS les joueurs connectés (non hors-ligne)
   // demandent à passer pour changer de round. ---
   requestPass(playerName) {
-    if (this.phase !== 'playing') return;
+    if (this.phase !== 'playing' || this.clutchActive) return; // gelé pendant le clutch
     const player = this.findPlayerByName(playerName);
     if (!player || player.offline) return;
     this.passVotes.add(player.name.toLowerCase());
@@ -310,7 +324,7 @@ class Room {
   }
 
   checkPassThreshold() {
-    if (this.phase !== 'playing') return;
+    if (this.phase !== 'playing' || this.clutchActive) return;
     const active = this.activePlayers();
     const votes = this.countVotes(this.passVotes);
     if (active.length > 0 && votes >= active.length) {
@@ -322,7 +336,7 @@ class Room {
   // --- Vote "zoom suivant" : dézoome tout de suite quand TOUS les joueurs
   // connectés le demandent (raccourci le minuteur). ---
   requestZoom(playerName) {
-    if (this.phase !== 'playing' || this.level >= this.crops.length - 1) return;
+    if (this.phase !== 'playing' || this.clutchActive || this.level >= this.crops.length - 1) return;
     const player = this.findPlayerByName(playerName);
     if (!player || player.offline) return;
     this.zoomVotes.add(player.name.toLowerCase());
@@ -331,7 +345,7 @@ class Room {
   }
 
   checkZoomThreshold() {
-    if (this.phase !== 'playing') return;
+    if (this.phase !== 'playing' || this.clutchActive) return;
     const active = this.activePlayers();
     const votes = this.countVotes(this.zoomVotes);
     if (active.length > 0 && votes >= active.length) {
@@ -372,47 +386,108 @@ class Room {
     };
   }
 
-  win(player) {
-    clearInterval(this.zoomClock);
-    clearInterval(this.hintTimer);
-    this.phase = 'intermission';
-    // Score au temps : trouvé tôt (photo encore très zoomée) = plus de points.
-    // 4 niveaux de zoom -> 4,3,2,1 points selon le niveau atteint.
-    const pts = Math.max(1, this.crops.length - this.level);
+  // Points pour un joueur qui trouve : 1er au plein tarif (score au temps :
+  // photo encore zoomée = plus de points), suivants dégressifs par ordre
+  // d'arrivée dans la fenêtre clutch (2e = plein−1, 3e = plein−2, … min 1).
+  findPoints(order) {
+    const full = Math.max(1, this.crops.length - this.level);
+    return order === 0 ? full : Math.max(1, full - order);
+  }
+
+  // Enregistre une trouvaille (1er ou suivant) : crédite les points, mémorise
+  // l'ordre, émet un « punch » round:found + rediffuse l'état.
+  recordFind(player) {
+    const order = this.found.length;
+    const pts = this.findPoints(order);
     player.score += pts;
     const elapsed = Math.round((Date.now() - this.roundStartedAt) / 1000);
-    // Position de la cible relative au crop affiché, pour dessiner le marqueur côté client.
-    // En mode photo, le joueur cible EST le centre de la capture -> marqueur au centre.
+    this.found.push({ name: player.name, pts, order });
+    this.foundNames.add(player.name.toLowerCase());
+    this.channel().emit('round:found', { name: player.name, pts, first: order === 0, elapsedSec: elapsed });
+    console.log(`[${this.name}] ${player.name} a trouvé en ${elapsed}s (+${pts} pts, ${order === 0 ? '1er' : 'clutch #' + order})`);
+    return pts;
+  }
+
+  // 1er à trouver : fige le dézoom et ouvre la fenêtre clutch (sauf en solo /
+  // s'il n'y a pas d'autre joueur actif -> résolution immédiate).
+  firstFind(player) {
+    clearInterval(this.zoomClock);
+    this.secondsLeft = null;
+    this.recordFind(player);
+    const others = this.activePlayers().filter((p) => !this.foundNames.has(p.name.toLowerCase()));
+    if (others.length === 0) { this.resolveRound(); return; }
+    this.clutchActive = true;
+    this.clutchLeft = this.config.clutchSec || 30;
+    this.broadcastState();
+    clearInterval(this.clutchClock);
+    this.clutchClock = setInterval(() => {
+      this.clutchLeft--;
+      // fin anticipée si plus personne d'actif à attendre
+      const waiting = this.activePlayers().filter((p) => !this.foundNames.has(p.name.toLowerCase()));
+      if (this.clutchLeft <= 0 || waiting.length === 0) this.resolveRound();
+    }, 1000);
+  }
+
+  // Joueur suivant qui atteint la cible pendant la fenêtre.
+  clutchFind(player) {
+    this.recordFind(player);
+    const waiting = this.activePlayers().filter((p) => !this.foundNames.has(p.name.toLowerCase()));
+    if (waiting.length === 0) this.resolveRound(); // tout le monde a trouvé
+    else this.broadcastState();
+  }
+
+  // Résolution : ferme la fenêtre, révèle la carte, gère la fin de partie
+  // (différée ici pour que plusieurs joueurs puissent scorer dans la manche).
+  resolveRound() {
+    if (this.phase === 'intermission' || this.phase === 'gameover') return;
+    clearInterval(this.clutchClock);
+    clearInterval(this.zoomClock);
+    clearInterval(this.hintTimer);
+    this.clutchActive = false;
+    this.clutchLeft = null;
+    this.phase = 'intermission';
+    const winnerName = this.found.length ? this.found[0].name : null;
+    // marqueur cible dans le crop (mode carte uniquement)
     let fx = 0.5, fy = 0.5;
-    if (this.pack.mode !== 'photo') {
+    if (this.pack.mode !== 'photo' && this.crops[this.level]) {
       const rect = this.crops[this.level].rect;
       const ts = this.pack.tileSize;
       fx = (this.target.gx * ts + ts / 2 - rect.x) / rect.w;
       fy = (this.target.gy * ts + ts / 2 - rect.y) / rect.h;
     }
-    // Fin de partie : premier à winScore points (0 = pas de limite).
+    // Fin de partie : un joueur a franchi winScore. Gagnant = plus haut score,
+    // égalité tranchée par l'ordre d'arrivée (found[0] d'abord).
     const winScore = this.config.winScore || 0;
-    const gameOver = winScore > 0 && player.score >= winScore;
-    console.log(`[${this.name}] ${player.name} a trouvé en ${elapsed}s (+${pts} pts)${gameOver ? ' — PARTIE GAGNÉE' : ''} !`);
+    const overallWinner = this.found.length
+      ? [...this.found].sort((a, b) => this.scoreOf(b.name) - this.scoreOf(a.name))[0].name
+      : winnerName;
+    const gameOver = winScore > 0 && this.found.some((f) => this.scoreOf(f.name) >= winScore);
     this.channel().emit('round:won', {
-      winner: player.name,
-      elapsedSec: elapsed,
-      points: pts,
+      winner: gameOver ? overallWinner : winnerName,
+      found: this.found,
+      points: this.found.length ? this.found[0].pts : 0,
+      elapsedSec: Math.round((Date.now() - this.roundStartedAt) / 1000),
       gameOver,
       marker: { fx, fy },
-      reveal: this.buildReveal(player.name),
+      reveal: this.buildReveal(winnerName),
       ...this.publicState(),
     });
     setTimeout(() => {
-      if (gameOver) this.endGame(player.name);
+      if (gameOver) this.endGame(overallWinner);
       else if (this.players.size > 0) this.startRound();
       else this.phase = 'waiting';
     }, this.config.intermissionSec * 1000);
   }
 
+  scoreOf(name) {
+    const p = this.findPlayerByName(name);
+    return p ? p.score : 0;
+  }
+
   // Podium de fin de partie, puis remise à zéro et nouvelle partie.
   endGame(winnerName) {
     clearInterval(this.zoomClock);
+    clearInterval(this.clutchClock);
     clearInterval(this.hintTimer);
     this.phase = 'gameover';
     const standings = [...this.players.values()]
@@ -472,6 +547,11 @@ class Room {
       atMaxZoom: this.level >= this.pack.zoomLevels.length - 1,
       winScore: this.config.winScore || 0,
       difficulty: this.difficulty,
+      // Fenêtre clutch : active + compteur (propre à la manche) + trouvailles.
+      // Le reveal n'est PAS inclus ici -> la cible reste cachée aux non-trouveurs.
+      clutchActive: this.clutchActive,
+      clutchInSec: this.clutchLeft,
+      found: this.found,
       hints: this.computeHints(),
       players: [...this.players.entries()]
         .map(([id, p]) => ({

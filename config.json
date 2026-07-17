@@ -5,5 +5,6 @@
   "intermissionSec": 8,
   "marginTiles": 3,
   "winScore": 10,
-  "podiumSec": 12
+  "podiumSec": 12,
+  "clutchSec": 30
 }
