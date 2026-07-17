@@ -125,6 +125,16 @@ app.get('/minimap', (req, res) => {
   res.send(buf);
 });
 
+// Town Map (carte du Pokégear) pour la révélation de fin de round. Ne révèle
+// aucune cible en soi (juste la carte de fond ; les positions arrivent par socket).
+app.get('/townmap', (req, res) => {
+  const buf = pack.townmapBuffer && pack.townmapBuffer();
+  if (!buf) return res.status(404).end();
+  res.set('Content-Type', 'image/png');
+  res.set('Cache-Control', 'public, max-age=86400');
+  res.send(buf);
+});
+
 // Carte complète — uniquement pour le pack de test (simulateur). Jamais pour un vrai pack.
 app.get('/simmap', (req, res) => {
   if (!pack.simFullMap) return res.status(403).send('Pas disponible pour ce pack');

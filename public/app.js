@@ -207,32 +207,37 @@ function drawReveal(reveal) {
   cv.width = W; cv.height = H; cv.hidden = false;
   const ctx = cv.getContext('2d');
   ctx.fillStyle = '#0b0e14'; ctx.fillRect(0, 0, W, H);
+  const T = reveal.townmap; // affine coords RAM -> pixels Town Map (sinon minimap 1:1)
   const img = new Image();
   img.onload = () => {
     const scale = Math.min(W / reveal.w, H / reveal.h);
     const dw = reveal.w * scale, dh = reveal.h * scale;
     const ox = (W - dw) / 2, oy = (H - dh) / 2;
     ctx.imageSmoothingEnabled = false;
-    ctx.globalAlpha = 0.55; ctx.drawImage(img, ox, oy, dw, dh); ctx.globalAlpha = 1;
-    const P = (gx, gy) => [ox + gx * scale, oy + gy * scale];
-    // cible = croix + anneau rouge
+    ctx.globalAlpha = T ? 1 : 0.55; ctx.drawImage(img, ox, oy, dw, dh); ctx.globalAlpha = 1;
+    const P = T
+      ? (gx, gy) => [ox + (T.ax * gx + T.bx * gy + T.cx) * scale, oy + (T.ay * gx + T.by * gy + T.cy) * scale]
+      : (gx, gy) => [ox + gx * scale, oy + gy * scale];
+    // cible = croix + anneau rouge (avec halo noir pour ressortir sur la carte)
     const [tx, ty] = P(reveal.target.gx, reveal.target.gy);
-    ctx.strokeStyle = '#ff4d4d'; ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgba(0,0,0,.55)'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(tx, ty, 9, 0, 7); ctx.stroke();
+    ctx.strokeStyle = '#ff4d4d'; ctx.lineWidth = 2.5;
     ctx.beginPath(); ctx.arc(tx, ty, 9, 0, 7); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(tx - 13, ty); ctx.lineTo(tx + 13, ty); ctx.moveTo(tx, ty - 13); ctx.lineTo(tx, ty + 13); ctx.stroke();
-    ctx.fillStyle = '#ff8a8a'; ctx.font = 'bold 11px system-ui'; ctx.textAlign = 'center';
-    ctx.fillText((reveal.interior ? '🚪 ' : '') + (reveal.zone || 'cible'), tx, ty + 22);
+    ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.7)'; ctx.font = 'bold 12px system-ui'; ctx.textAlign = 'center';
+    const label = (reveal.interior ? '🚪 ' : '') + (reveal.zone || 'cible');
+    ctx.strokeText(label, tx, ty + 23); ctx.fillStyle = '#ffdada'; ctx.fillText(label, tx, ty + 23);
     // joueurs
     for (const pl of reveal.players) {
       const [px, py] = P(pl.gx, pl.gy);
       ctx.fillStyle = pl.won ? '#ffd54a' : '#4c9ef0';
       ctx.beginPath(); ctx.arc(px, py, pl.won ? 6 : 5, 0, 7); ctx.fill();
       ctx.strokeStyle = '#0b0e14'; ctx.lineWidth = 1.5; ctx.stroke();
-      ctx.fillStyle = '#e8ebf0'; ctx.font = '11px system-ui'; ctx.textAlign = 'center';
-      ctx.fillText(pl.name, px, py - 9);
+      ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.7)'; ctx.font = 'bold 11px system-ui'; ctx.textAlign = 'center';
+      ctx.strokeText(pl.name, px, py - 9); ctx.fillStyle = '#fff'; ctx.fillText(pl.name, px, py - 9);
     }
   };
-  img.src = '/minimap';
+  img.src = T ? '/townmap' : '/minimap';
 }
 socket.on('admin', (d) => {
   const t = d.target;

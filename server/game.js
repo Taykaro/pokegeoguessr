@@ -346,8 +346,9 @@ class Room {
     return this.pack.playerWorldPos(p.mapID, p.x, p.y);
   }
 
-  // Données pour la révélation de fin de round sur la minimap :
-  // position monde de la cible + de chaque joueur (coords RAM 1:1 avec la minimap).
+  // Données pour la révélation de fin de round : position monde (coords RAM) de
+  // la cible + de chaque joueur. Le client les place sur le Town Map via l'affine
+  // (townmap.affine) si dispo, sinon sur la minimap 1:1 (repli).
   buildReveal(winnerName) {
     const tpos = this.pack.targetWorldPos ? this.pack.targetWorldPos(this.target) : null;
     const players = [];
@@ -355,9 +356,13 @@ class Room {
       const wp = this.worldPosOf(p);
       if (wp) players.push({ name: p.name, gx: wp.gx, gy: wp.gy, won: p.name === winnerName });
     }
+    const tm = this.pack.townmap;
     return {
-      w: this.pack.minimapW || 0,
-      h: this.pack.minimapH || 0,
+      // dims de la carte de fond utilisée par le client
+      w: tm ? tm.w : (this.pack.minimapW || 0),
+      h: tm ? tm.h : (this.pack.minimapH || 0),
+      // affine coords RAM -> pixels Town Map (absent => minimap 1:1)
+      townmap: tm ? { ax: tm.ax, bx: tm.bx, cx: tm.cx, ay: tm.ay, by: tm.by, cy: tm.cy } : null,
       target: tpos ? { gx: tpos.gx, gy: tpos.gy } : null,
       interior: !!this.target.interior,
       zone: this.target.zone || null,

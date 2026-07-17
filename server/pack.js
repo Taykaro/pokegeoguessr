@@ -46,6 +46,14 @@ class GamePack {
         const d = PNG.sync.read(this.minimapPng);
         this.minimapW = d.width; this.minimapH = d.height;
       } else { this.minimapPng = null; this.minimapW = 0; this.minimapH = 0; }
+      // townmap.png : la carte du Pokégear (stylisée) pour la révélation. Une
+      // transfo affine (calibrée) mappe les coords RAM -> pixels de cette carte
+      // (« à la ville près », la carte n'étant pas à l'échelle des tuiles).
+      const tm = path.join(dir, 'townmap.png');
+      if (fs.existsSync(tm) && cfg.townmap) {
+        this.townmapPng = fs.readFileSync(tm);
+        this.townmap = cfg.townmap; // { w, h, ax, bx, cx, ay, by, cy }
+      } else { this.townmapPng = null; this.townmap = null; }
       this._photoCache = new Map();
       return;
     }
@@ -222,6 +230,10 @@ class GamePack {
 
   minimapBuffer() {
     return this.minimapPng;
+  }
+
+  townmapBuffer() {
+    return this.townmapPng;
   }
 }
 
