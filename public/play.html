@@ -54,6 +54,8 @@
   .btn:hover { background:#354065; } .btn:disabled { opacity:.55; cursor:default; }
   .btn-danger { background:#5a2b2b; border-color:#6b3a3a; } .btn-danger:hover { background:#6b3535; }
   #scores { font-size:13px; color:#b9c0cd; } #scores b { color:#e8ebf0; } #goal { color:#8a93a6; font-size:12px; }
+  .pl-in { color:#b9c0cd; } .pl-idle { color:#e0c62a; } .pl-off { color:#6b7488; text-decoration:line-through; }
+  .pl-off b { color:#6b7488 !important; }
   #podium { position:fixed; inset:0; z-index:30; display:flex; align-items:center; justify-content:center; background:rgba(8,10,16,.9); backdrop-filter:blur(3px); animation:fadein .3s ease; }
   .podium-card { text-align:center; padding:20px 24px; max-width:320px; }
   .podium-cup { font-size:56px; animation:pop .5s cubic-bezier(.2,1.5,.4,1) both; }
@@ -204,7 +206,14 @@ document.addEventListener('click', ()=>{ try{ac();}catch{} }, { once:true });
 function apply(s){
   state = s;
   $('round').textContent = s.round; $('zoom').textContent = s.level + 1;
-  $('scores-v').textContent = (s.players||[]).map(p=>`${p.name} ${p.score}`).join(' · ') || '–';
+  // Présence : on distingue connecté-et-en-jeu / connecté-mais-pas-en-jeu /
+  // déconnecté, pour comprendre d'où vient le seuil des votes.
+  $('scores-v').innerHTML = (s.players||[]).map(p=>{
+    const cls = p.offline ? 'pl-off' : (p.inGame ? 'pl-in' : 'pl-idle');
+    const tag = p.offline ? '💤' : (p.inGame ? '🎮' : '⏳');
+    const ttl = p.offline ? 'déconnecté' : (p.inGame ? 'en jeu' : 'connecté, pas en jeu');
+    return `<span class="${cls}" title="${ttl}">${tag} ${esc(p.name)} <b>${p.score}</b></span>`;
+  }).join(' · ') || '–';
   const diffLabel = { facile:'Facile', moyen:'Moyen', difficile:'Difficile' }[s.difficulty] || '';
   const parts = [s.winScore?`premier à ${s.winScore}`:'', diffLabel].filter(Boolean);
   $('goal').textContent = parts.length ? `(${parts.join(' · ')})` : '';
@@ -243,10 +252,15 @@ function hints(s){
   for(const el of [...box.children]) if(!seen.has(el.dataset.name)) el.remove();
 }
 function img(){ $('photo').src = `/img/${room}?t=${Date.now()}`; }
+// Décompte LOCAL à partir du temps restant envoyé par le serveur. On ne compare
+// plus un timestamp serveur à l'horloge locale : le moindre décalage d'horloge
+// donnait des chronos aberrants (« dézoom 481:19 »).
 function countdown(){
   clearInterval(cd); const el=$('countdown');
-  if(!state || !state.nextZoomAt){ el.textContent='zoom max'; return; }
-  const t=()=>{ const s=Math.max(0,Math.round((state.nextZoomAt-Date.now())/1000)); el.textContent=`dézoom ${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`; };
+  const start = state && state.zoomInSec;
+  if(start===null || start===undefined){ el.textContent='zoom max'; return; }
+  let s = Math.max(0, start);
+  const t=()=>{ el.textContent=`dézoom ${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`; if(s>0)s--; };
   t(); cd=setInterval(t,1000);
 }
 $('passvote').onclick = () => { myVoted=true; socket.emit('pass:request'); if(state)apply(state); };

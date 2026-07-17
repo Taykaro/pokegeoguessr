@@ -20,6 +20,13 @@ function hintPct(tier, m) {
   return Math.round(lerp(26, 6, (m - 5) / 30));                           // Poké (lost)
 }
 
+// Un joueur hors-ligne depuis plus longtemps que ça est retiré de la room
+// (sinon la liste des scores accumule des fantômes indéfiniment).
+const STALE_OFFLINE_MS = 5 * 60 * 1000;
+// Au-delà, on considère qu'un joueur n'est plus "en jeu" (émulateur arrêté,
+// ROM pas chargée) : sert à l'affichage, pas au décompte des votes.
+const IN_GAME_MS = 20 * 1000;
+
 // Logique d'une partie : rounds, dézoom progressif, détection du gagnant.
 class Room {
   constructor(io, name, pack, config, filter) {
@@ -49,6 +56,72 @@ class Room {
     // secret par room, distribué uniquement aux vrais admins — empêche de
     // récupérer l'image pleine (/img?full=1) en devinant juste l'URL.
     this.adminKey = Math.random().toString(36).slice(2) + Date.now().toString(36);
+    this.lastPresenceSig = '';
+    this.startPresenceTicker();
+  }
+
+  // --- Présence ---
+  // Source de vérité = le registre des sockets de Socket.IO, PAS le flag
+  // `offline` : un socket mort sans 'disconnect' reçu (réseau coupé, onglet
+  // tué, mise en veille) laissait un fantôme compté comme actif, ce qui
+  // bloquait les votes (« 0/2 » alors qu'on est seul). On répare au passage.
+  activePlayers() {
+    const out = [];
+    for (const [id, p] of this.players) {
+      const connected = this.io.sockets.sockets.has(id);
+      if (!connected && !p.offline) { p.offline = true; p.offlineSince = Date.now(); }
+      if (!p.offline && connected) out.push(p);
+    }
+    return out;
+  }
+
+  // Retire les joueurs hors-ligne depuis trop longtemps (ils ne peuvent plus
+  // récupérer leur score de toute façon).
+  pruneStale() {
+    const now = Date.now();
+    let changed = false;
+    for (const [id, p] of this.players) {
+      if (p.offline && now - (p.offlineSince || now) > STALE_OFFLINE_MS) { this.players.delete(id); changed = true; }
+    }
+    return changed;
+  }
+
+  // Ne compte que les votes de joueurs encore présents : un joueur qui vote
+  // puis quitte ne doit plus peser dans le seuil.
+  countVotes(voteSet) {
+    const activeNames = new Set(this.activePlayers().map((p) => p.name.toLowerCase()));
+    let n = 0;
+    for (const v of voteSet) if (activeNames.has(v)) n++;
+    return n;
+  }
+
+  // "En jeu" = son émulateur envoie encore des positions (ROM chargée, pas juste
+  // un onglet ouvert). Sert à l'affichage, pas au décompte des votes.
+  isInGame(p) {
+    return !!p.lastPosAt && Date.now() - p.lastPosAt < IN_GAME_MS;
+  }
+
+  // Signature de l'état de présence : sert à ne rediffuser que si ça a bougé.
+  // Inclut le statut "en jeu" pour que l'indicateur se rafraîchisse tout seul.
+  presenceSignature() {
+    return this.activePlayers()
+      .map((p) => p.name + (this.isInGame(p) ? '+' : '-'))
+      .sort().join('|') + '#' + this.players.size;
+  }
+
+  // Balayage régulier : détecte les sockets morts même sans événement, purge
+  // les vieux fantômes et débloque les votes en attente.
+  startPresenceTicker() {
+    clearInterval(this.presenceTimer);
+    this.presenceTimer = setInterval(() => {
+      const pruned = this.pruneStale();
+      const sig = this.presenceSignature();
+      if (sig === this.lastPresenceSig && !pruned) return;
+      this.lastPresenceSig = sig;
+      this.broadcastState();
+      this.checkPassThreshold();
+      this.checkZoomThreshold();
+    }, 5000);
   }
 
   channel() {
@@ -75,7 +148,7 @@ class Room {
     // On ne supprime pas le joueur : il peut se reconnecter avec son score.
     // On le marque juste déconnecté pour l'affichage.
     const p = this.players.get(socketId);
-    if (p) p.offline = true;
+    if (p) { p.offline = true; p.offlineSince = Date.now(); }
     this.broadcastState();
     this.checkPassThreshold(); // un joueur qui part peut débloquer les votes
     this.checkZoomThreshold();
@@ -194,8 +267,10 @@ class Room {
   handlePos(playerName, mapID, x, y) {
     const player = this.findPlayerByName(playerName);
     if (!player) return;
-    // mémorise la dernière position (pour le panneau admin / debug)
+    // mémorise la dernière position (pour le panneau admin / debug) et l'instant
+    // du dernier signe de vie de son émulateur (= "en jeu")
     player.lastPos = { mapID: Number(mapID), x: Number(x), y: Number(y) };
+    player.lastPosAt = Date.now();
     this.emitAdmin();
     if (this.phase !== 'playing' || !this.target) return;
     const margin = this.config.marginTiles ?? this.pack.marginTiles;
@@ -234,9 +309,10 @@ class Room {
 
   checkPassThreshold() {
     if (this.phase !== 'playing') return;
-    const active = [...this.players.values()].filter((p) => !p.offline);
-    if (active.length > 0 && this.passVotes.size >= active.length) {
-      console.log(`[${this.name}] vote unanime pour passer (${this.passVotes.size}/${active.length})`);
+    const active = this.activePlayers();
+    const votes = this.countVotes(this.passVotes);
+    if (active.length > 0 && votes >= active.length) {
+      console.log(`[${this.name}] vote unanime pour passer (${votes}/${active.length})`);
       this.startRound();
     }
   }
@@ -254,9 +330,10 @@ class Room {
 
   checkZoomThreshold() {
     if (this.phase !== 'playing') return;
-    const active = [...this.players.values()].filter((p) => !p.offline);
-    if (active.length > 0 && this.zoomVotes.size >= active.length) {
-      console.log(`[${this.name}] vote unanime pour dézoomer (${this.zoomVotes.size}/${active.length})`);
+    const active = this.activePlayers();
+    const votes = this.countVotes(this.zoomVotes);
+    if (active.length > 0 && votes >= active.length) {
+      console.log(`[${this.name}] vote unanime pour dézoomer (${votes}/${active.length})`);
       this.advanceZoom();
     }
   }
@@ -374,17 +451,27 @@ class Room {
       round: this.roundNum,
       level: this.level,
       maxLevel: this.pack.zoomLevels.length - 1,
+      // Temps restant RELATIF (secondes) : le client décompte lui-même. Un
+      // timestamp absolu dépendait de l'accord des horloges client/serveur —
+      // le moindre décalage donnait des chronos aberrants (vu : « 481:19 »).
+      zoomInSec: this.nextZoomAt ? Math.max(0, Math.round((this.nextZoomAt - Date.now()) / 1000)) : null,
+      // conservé pour les anciens clients déjà distribués (exe) qui l'utilisent
       nextZoomAt: this.nextZoomAt,
       zoomIntervalSec: this.config.zoomIntervalSec,
-      passVotes: this.passVotes.size,
-      passNeeded: [...this.players.values()].filter((p) => !p.offline).length,
-      zoomVotes: this.zoomVotes.size,
+      passVotes: this.countVotes(this.passVotes),
+      passNeeded: this.activePlayers().length,
+      zoomVotes: this.countVotes(this.zoomVotes),
       atMaxZoom: this.level >= this.pack.zoomLevels.length - 1,
       winScore: this.config.winScore || 0,
       difficulty: this.difficulty,
       hints: this.computeHints(),
-      players: [...this.players.values()]
-        .map((p) => ({ name: p.name, score: p.score, offline: !!p.offline }))
+      players: [...this.players.entries()]
+        .map(([id, p]) => ({
+          name: p.name,
+          score: p.score,
+          offline: !!p.offline || !this.io.sockets.sockets.has(id),
+          inGame: this.isInGame(p),
+        }))
         .sort((a, b) => b.score - a.score),
     };
   }

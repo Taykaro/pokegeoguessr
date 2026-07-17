@@ -121,13 +121,18 @@ function hints(s) {
   for (const el of [...box.children]) if (!seen.has(el.dataset.name)) el.remove();
 }
 function img() { $('photo').src = `/img/${room}?t=${Date.now()}`; }
+// Décompte LOCAL depuis le temps restant envoyé par le serveur : comparer un
+// timestamp serveur à l'horloge locale donnait des chronos aberrants dès que
+// les horloges divergeaient (vu : « dézoom 481:19 »).
 function countdown() {
   clearInterval(cd);
   const el = $('countdown');
-  if (!state || !state.nextZoomAt) { el.textContent = 'zoom max'; return; }
+  const start = state && state.zoomInSec;
+  if (start === null || start === undefined) { el.textContent = 'zoom max'; return; }
+  let s = Math.max(0, start);
   const t = () => {
-    const s = Math.max(0, Math.round((state.nextZoomAt - Date.now()) / 1000));
     el.textContent = `dézoom ${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+    if (s > 0) s--;
   };
   t(); cd = setInterval(t, 1000);
 }

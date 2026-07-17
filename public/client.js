@@ -72,10 +72,14 @@ function renderScores(players) {
 function startCountdown() {
   clearInterval(countdownInterval);
   const el = $('countdown');
-  if (!state || !state.nextZoomAt) { el.textContent = 'Zoom max'; return; }
+  // décompte local (le temps restant vient du serveur) : immunisé au décalage
+  // d'horloge client/serveur
+  const start = state && state.zoomInSec;
+  if (start === null || start === undefined) { el.textContent = 'Zoom max'; return; }
+  let s = Math.max(0, start);
   const tick = () => {
-    const s = Math.max(0, Math.round((state.nextZoomAt - Date.now()) / 1000));
     el.textContent = `Dézoom dans ${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+    if (s > 0) s--;
   };
   tick();
   countdownInterval = setInterval(tick, 1000);
