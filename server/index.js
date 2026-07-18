@@ -41,9 +41,17 @@ function sanitizeFilter(f) {
 }
 
 const rooms = new Map();
+// Options de salon fixées à la création : limite de joueurs + mot de passe.
+function sanitizeRoomOpts(o) {
+  o = o || {};
+  const n = parseInt(o.maxPlayers, 10);
+  const maxPlayers = Number.isFinite(n) && n >= 2 && n <= 16 ? n : 0; // 0 = illimité
+  const password = String(o.password || '').trim().slice(0, 24);
+  return { maxPlayers, password };
+}
 // Crée une room et branche le hook qui rafraîchit la liste des salons.
-function makeRoom(key, filter) {
-  const r = new Room(io, key, pack, config, sanitizeFilter(filter));
+function makeRoom(key, filter, opts) {
+  const r = new Room(io, key, pack, config, sanitizeFilter(filter), opts || {});
   r.onChange = broadcastRooms;
   rooms.set(key, r);
   return r;
@@ -66,6 +74,7 @@ function roomList() {
     out.push({
       room: key, host: r.host, players: active.length,
       ready: active.filter((p) => r.isInGame(p)).length,
+      max: r.maxPlayers, locked: !!r.password,
       phase: r.phase, difficulty: r.difficulty,
       region: r.filter.region, type: r.filter.type,
     });
@@ -94,24 +103,28 @@ io.on('connection', (socket) => {
   socket.on('rooms:get', (ack) => { if (ack) ack(roomList()); });
 
   // Créer une room (le créateur devient meneur ; réglages figés à la création).
-  socket.on('room:create', ({ name, room, filter }, ack) => {
+  socket.on('room:create', ({ name, room, filter, maxPlayers, password }, ack) => {
     name = String(name || '').trim().slice(0, 20);
     const key = String(room || '').trim().toLowerCase().slice(0, 20);
     if (!name) return ack && ack({ ok: false, error: 'Pseudo requis' });
     if (!key) return ack && ack({ ok: false, error: 'Nom de room requis' });
     if (rooms.has(key)) return ack && ack({ ok: false, error: 'Cette room existe déjà — rejoins-la' });
-    const res = enter(makeRoom(key, filter), name);
+    const res = enter(makeRoom(key, filter, sanitizeRoomOpts({ maxPlayers, password })), name);
     broadcastRooms();
     if (ack) ack(res);
   });
 
-  // Rejoindre un salon existant.
-  socket.on('room:join', ({ name, room }, ack) => {
+  // Rejoindre un salon existant (contrôle mot de passe + salon plein).
+  socket.on('room:join', ({ name, room, password }, ack) => {
     name = String(name || '').trim().slice(0, 20);
     const key = String(room || '').trim().toLowerCase();
     if (!name) return ack && ack({ ok: false, error: 'Pseudo requis' });
     if (!rooms.has(key)) return ack && ack({ ok: false, error: 'Room introuvable' });
-    const res = enter(rooms.get(key), name);
+    const r = rooms.get(key);
+    if (r.password && String(password || '') !== r.password) return ack && ack({ ok: false, error: 'Mot de passe incorrect', locked: true });
+    const existing = r.findPlayerByName(name); // reconnexion (même pseudo) : pas bloquée par la limite
+    if (!existing && r.isFull()) return ack && ack({ ok: false, error: 'Salon complet' });
+    const res = enter(r, name);
     broadcastRooms();
     if (ack) ack(res);
   });

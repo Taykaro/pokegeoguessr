@@ -210,15 +210,17 @@
   .m-sec{ font-family:var(--disp); color:var(--line2); font-size:15px; margin:16px 0 6px; padding-bottom:4px; border-bottom:2px solid var(--cream2); }
   #room-list{ display:flex; flex-direction:column; gap:7px; max-height:220px; overflow:auto; }
   .m-empty{ color:var(--ink2); font-size:13px; text-align:center; padding:12px 0; }
-  .room-row{ display:flex; align-items:center; gap:8px; background:var(--paper); border:2px solid var(--cream2); border-radius:10px; padding:8px 10px; }
-  .rr-main{ flex:1; min-width:0; } .rr-name{ font-family:var(--disp); color:var(--ink); font-size:14px; }
-  .rr-info{ font-size:11px; color:var(--ink2); }
-  .rr-tag{ font-size:10px; font-weight:700; padding:2px 6px; border-radius:6px; background:var(--cream2); color:var(--line2); }
-  .rr-tag.live{ background:#f6dca0; color:#8a5a10; }
-  .rr-join{ font-family:var(--disp); background:var(--green); color:#fff; border:none; border-radius:8px; padding:7px 13px; box-shadow:0 3px 0 var(--greend); cursor:pointer; font-size:13px; }
-  .rr-join:active{ transform:translateY(2px); box-shadow:0 1px 0 var(--greend); }
-  #m-create{ width:100%; margin-top:14px; font-family:var(--disp); font-weight:700; font-size:18px; background:var(--red); color:#fff; border:none; border-radius:12px; box-shadow:0 4px 0 var(--redd); padding:12px; cursor:pointer; }
-  #m-create:active{ transform:translateY(3px); box-shadow:0 1px 0 var(--redd); }
+  .room-row{ display:flex; align-items:center; gap:10px; background:var(--paper); border:2px solid var(--cream2); border-radius:11px; padding:9px 11px; transition:border-color .12s; }
+  .room-row:hover{ border-color:var(--blue); }
+  .rr-main{ flex:1; min-width:0; display:flex; flex-direction:column; gap:5px; }
+  .rr-name{ font-family:var(--disp); color:var(--ink); font-size:17px; line-height:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .rr-info{ display:flex; flex-wrap:wrap; gap:5px; }
+  .rr-badge{ font-size:11px; font-weight:600; padding:2px 8px; border-radius:20px; background:var(--cream2); color:var(--line2); white-space:nowrap; }
+  .rr-badge.live{ background:#f6dca0; color:#8a5a10; }
+  #room-list .rr-join{ flex:none; width:auto; margin:0; font-family:var(--disp); background:var(--green); color:#fff; border:none; border-radius:8px; padding:6px 13px; box-shadow:0 3px 0 var(--greend); cursor:pointer; font-size:12px; }
+  #room-list .rr-join:hover{ filter:brightness(1.06); background:var(--green); } #room-list .rr-join:active{ transform:translateY(2px); box-shadow:0 1px 0 var(--greend); }
+  #menu #m-create{ width:100%; margin-top:14px; font-family:var(--disp); font-weight:700; font-size:18px; background:var(--red); color:#fff; border:none; border-radius:12px; box-shadow:0 4px 0 var(--redd); padding:12px; cursor:pointer; }
+  #menu #m-create:hover{ background:#ef6250; } #menu #m-create:active{ transform:translateY(3px); box-shadow:0 1px 0 var(--redd); }
   /* ---- salon (lobby) dans la vue de jeu ---- */
   #lobby{ background:var(--cream); border:3px solid var(--line); border-radius:14px; box-shadow:0 4px 0 var(--line2); padding:14px; display:flex; flex-direction:column; gap:9px; }
   #lobby h2{ font-family:var(--disp); color:var(--line2); font-size:19px; margin:0; }
@@ -260,6 +262,14 @@
     <option value="moyen" selected>Moyen — jauge à chaque dézoom</option>
     <option value="difficile">Difficile — aucune jauge</option>
   </select>
+  <div class="row">
+    <div><label>Joueurs max</label><select id="m-max">
+      <option value="0">Illimité</option><option value="2">2</option><option value="3">3</option>
+      <option value="4">4</option><option value="6" selected>6</option><option value="8">8</option>
+      <option value="10">10</option><option value="16">16</option>
+    </select></div>
+    <div><label>Mot de passe (option)</label><input id="m-pass" maxlength="24" placeholder="vide = public"></div>
+  </div>
   <button id="m-create">Créer le salon</button>
   <p class="sub" style="margin-top:12px">Tu seras le meneur : tu lances la partie quand tout le monde a chargé sa ROM. Ta ROM SoulSilver (.nds) reste sur ta machine.</p>
 </div>
@@ -358,13 +368,15 @@ $('m-create').onclick = () => {
   if (!name) return alert('Entre ton pseudo'); if (!rm) return alert('Donne un nom au salon');
   myName = name; room = rm.toLowerCase();
   filter = { region: $('m-region').value, type: $('m-type').value, difficulty: $('m-diff').value };
-  socket.emit('room:create', { name: myName, room: rm, filter }, onEntered);
+  socket.emit('room:create', { name: myName, room: rm, filter, maxPlayers: +$('m-max').value, password: $('m-pass').value.trim() }, onEntered);
 };
-function joinRoom(key){
+function joinRoom(key, locked){
   const name = $('m-name').value.trim();
   if (!name) return alert('Entre d\'abord ton pseudo en haut ☝️');
+  let password = '';
+  if (locked){ password = prompt('🔒 Mot de passe du salon « ' + key + ' » :'); if (password === null) return; }
   myName = name; room = key;
-  socket.emit('room:join', { name: myName, room: key }, onEntered);
+  socket.emit('room:join', { name: myName, room: key, password }, onEntered);
 }
 // Liste des salons ouverts, mise à jour en direct.
 socket.on('rooms', (list) => {
@@ -373,12 +385,19 @@ socket.on('rooms', (list) => {
   box.innerHTML = '';
   for (const r of list){
     const live = r.phase !== 'lobby';
+    const count = r.max ? `${r.players}/${r.max}` : `${r.players}`;
     const row = document.createElement('div'); row.className = 'room-row';
-    row.innerHTML = `<div class="rr-main"><div class="rr-name">${esc(r.room)}</div>`
-      + `<div class="rr-info">👑 ${esc(r.host||'?')} · ${r.ready}/${r.players} prêt${r.players>1?'s':''} · ${DIFF[r.difficulty]||r.difficulty}</div></div>`
-      + `<span class="rr-tag ${live?'live':''}">${live?'en partie':'salon'}</span>`;
+    row.innerHTML =
+      `<div class="rr-main">`
+      + `<div class="rr-name">${r.locked ? '🔒 ' : ''}${esc(r.room)}</div>`
+      + `<div class="rr-info">`
+      +   `<span class="rr-badge">👥 ${count}</span>`
+      +   `<span class="rr-badge">👑 ${esc(r.host || '?')}</span>`
+      +   `<span class="rr-badge">${DIFF[r.difficulty] || r.difficulty}</span>`
+      +   (live ? `<span class="rr-badge live">● en partie</span>` : '')
+      + `</div></div>`;
     const b = document.createElement('button'); b.className = 'rr-join'; b.textContent = 'Rejoindre';
-    b.onclick = () => joinRoom(r.room); row.appendChild(b);
+    b.onclick = () => joinRoom(r.room, r.locked); row.appendChild(b);
     box.appendChild(row);
   }
 });
@@ -397,7 +416,10 @@ document.addEventListener('click', ()=>{ try{ac();}catch{} }, { once:true });
 // ---------- UI JEU ----------
 function renderLobby(s){
   $('lobby-room').textContent = s.room || room;
-  $('lobby-cfg').textContent = `${DIFF[s.difficulty]||s.difficulty} · premier à ${s.winScore} pts · ${regionLabel(s.region)} · ${typeLabel(s.type)}`;
+  const bits = [DIFF[s.difficulty]||s.difficulty, `premier à ${s.winScore} pts`, regionLabel(s.region), typeLabel(s.type)];
+  if (s.maxPlayers) bits.push(`max ${s.maxPlayers} joueurs`);
+  if (s.hasPassword) bits.push('🔒 privé');
+  $('lobby-cfg').textContent = bits.join(' · ');
   const box = $('lobby-players'); box.innerHTML = '';
   for (const p of (s.players||[]).filter(p=>!p.offline)){
     const ready = p.inGame; const el = document.createElement('div');

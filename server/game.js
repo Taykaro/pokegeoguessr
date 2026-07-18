@@ -29,7 +29,7 @@ const IN_GAME_MS = 20 * 1000;
 
 // Logique d'une partie : rounds, dézoom progressif, détection du gagnant.
 class Room {
-  constructor(io, name, pack, config, filter) {
+  constructor(io, name, pack, config, filter, opts = {}) {
     this.io = io;
     this.name = name;
     this.pack = pack;
@@ -39,6 +39,9 @@ class Room {
     // Difficulté : 'facile' (jauge live), 'moyen' (jauge au dézoom),
     // 'difficile' (aucune jauge chaud/froid).
     this.difficulty = (filter && filter.difficulty) || 'moyen';
+    // Options de salon fixées à la création : 0 = illimité ; '' = pas de mot de passe.
+    this.maxPlayers = opts.maxPlayers || 0;
+    this.password = opts.password || '';
     this.players = new Map(); // socketId -> { name, score }
     this.roundNum = 0;
     this.phase = 'lobby';   // lobby | playing | intermission | gameover
@@ -185,6 +188,11 @@ class Room {
     if (!active.some((p) => p.name.toLowerCase() === String(this.host).toLowerCase())) {
       this.host = active.length ? active[0].name : null;
     }
+  }
+
+  // Salon plein ? (0 = illimité). Compte les joueurs actifs.
+  isFull() {
+    return this.maxPlayers > 0 && this.activePlayers().length >= this.maxPlayers;
   }
 
   // Le meneur peut lancer quand TOUS les joueurs actifs ont chargé leur ROM.
@@ -588,6 +596,8 @@ class Room {
       host: this.host,
       region: this.filter.region,
       type: this.filter.type,
+      maxPlayers: this.maxPlayers,
+      hasPassword: !!this.password,
       canStart: this.canStart(),
       // Fenêtre clutch : active + compteur (propre à la manche) + trouvailles.
       // Le reveal n'est PAS inclus ici -> la cible reste cachée aux non-trouveurs.
