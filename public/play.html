@@ -112,15 +112,113 @@
   #rompick.card, #right .card, #scores { background:rgba(20,24,34,.82); }
   #right, #left { position:relative; }
 </style>
+<!-- ============ THÈME COZY GEN-4 (surcharge le dark ci-dessus) ============ -->
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;700&display=swap');
+  :root{
+    --disp:'Pixelify Sans','Trebuchet MS',system-ui,sans-serif;
+    --body:'Segoe UI',system-ui,sans-serif;
+    --ink:#243441; --ink2:#5f7180;
+    --cream:#fbf4e1; --cream2:#efe4c8; --paper:#fffdf5;
+    --line:#3d5c93; --line2:#25406e;
+    --red:#e35240; --redd:#b23629; --green:#5aa64a; --greend:#3f7f34;
+    --gold:#f2b636; --blue:#4a90d0;
+  }
+  html,body{ background:#8fceec; color:var(--ink); font-family:var(--body); }
+  /* ---- décor pixel qui défile ---- */
+  #bg{ position:fixed; inset:0; z-index:-3; overflow:hidden; background:linear-gradient(#8fd0ee,#bfe6f6 55%,#dff1e6); }
+  #bg .track{ position:absolute; left:0; bottom:0; height:100%; display:flex; width:max-content; animation:scrollx 70s linear infinite; }
+  #bg .track img{ height:100%; width:auto; image-rendering:pixelated; display:block; }
+  @keyframes scrollx{ from{transform:translateX(0)} to{transform:translateX(-50%)} }
+  .pcloud{ position:absolute; width:16px; height:10px; background:#fff; border-radius:4px; box-shadow:15px 0 #fff,-15px 0 #fff,0 -8px #fff,8px -8px #fff,-8px -8px #fff; opacity:.92; }
+  .pcloud.c1{ top:9%; animation:drift 60s linear infinite; }
+  .pcloud.c2{ top:22%; transform:scale(.75); animation:drift 90s linear infinite 12s; }
+  .pcloud.c3{ top:15%; transform:scale(1.25); animation:drift 74s linear infinite 34s; }
+  @keyframes drift{ from{left:-10%} to{left:112%} }
+  #bg::after{ content:""; position:absolute; inset:0; background:linear-gradient(180deg,transparent 55%,rgba(255,255,255,.05)); pointer-events:none; }
+  /* pokéball déco qui tourne */
+  .pball{ position:relative; width:24px; height:24px; flex:none; border-radius:50%; background:linear-gradient(#e3350d 0 50%,#f7f7f7 50% 100%); border:2px solid #141414; }
+  .pball::before{ content:""; position:absolute; top:50%; left:-2px; right:-2px; height:3px; background:#141414; transform:translateY(-50%); }
+  .pball::after{ content:""; position:absolute; top:50%; left:50%; width:8px; height:8px; background:#fff; border:2px solid #141414; border-radius:50%; transform:translate(-50%,-50%); }
+  .pball.spin{ animation:spin 3.2s steps(12) infinite; }
+  @keyframes spin{ to{transform:rotate(360deg)} }
+  /* ---- header ---- */
+  #head{ padding:12px 16px; }
+  #head h1{ display:flex; align-items:center; gap:9px; font-family:var(--disp); font-weight:700; font-size:21px; color:#fff; text-shadow:2px 2px 0 var(--line2); }
+  #head .head-btns button{ font-size:17px; filter:drop-shadow(1px 1px 0 rgba(0,0,0,.35)); }
+  /* ---- panneaux "boîte Pokémon" ---- */
+  .card, #menu.card, #rompick.card, #right .card, #emuwrap, #photo-wrap,
+  .set-card, .podium-card{
+    background:var(--cream); border:3px solid var(--line); border-radius:14px;
+    box-shadow:0 4px 0 var(--line2), 0 10px 22px rgba(20,45,35,.22); color:var(--ink);
+  }
+  #emuwrap, #photo-wrap{ background:#0e0e12; }
+  /* ---- menu ---- */
+  #menu{ max-width:440px; margin:4vh auto; padding:18px 18px 20px; }
+  #menu .sub{ color:var(--ink2); }
+  #menu label{ font-family:var(--disp); color:var(--line2); font-size:14px; font-weight:500; letter-spacing:.2px; }
+  #menu input, #menu select, #rompick input{ background:var(--paper); color:var(--ink); border:2px solid var(--cream2); border-radius:9px; }
+  #menu input::placeholder{ color:#9aa7b0; }
+  #menu input:focus, #menu select:focus{ outline:none; border-color:var(--blue); box-shadow:0 0 0 3px rgba(74,144,208,.2); }
+  #menu button#m-go{ font-family:var(--disp); font-weight:700; font-size:19px; letter-spacing:.5px; background:var(--red); color:#fff; border:none; border-radius:12px; box-shadow:0 4px 0 var(--redd); padding:13px; transition:transform .08s, background .12s; }
+  #menu button#m-go:hover{ background:#ef6250; }
+  #menu button#m-go:active{ transform:translateY(3px); box-shadow:0 1px 0 var(--redd); }
+  /* ---- jeu ---- */
+  #game{ padding:14px; gap:14px; }
+  #emustat{ color:var(--ink2); }
+  #meta{ font-family:var(--disp); color:var(--ink); background:var(--cream); border:2px solid var(--line); border-radius:10px; padding:7px 11px; box-shadow:0 3px 0 var(--line2); }
+  #meta b{ color:var(--line2); }
+  #countdown{ color:var(--redd); font-weight:700; }
+  /* jauges chaud/froid en clair */
+  .pill{ background:var(--cream); border:2px solid var(--cream2); box-shadow:0 3px 0 rgba(61,92,147,.22); }
+  .pill-name{ color:var(--ink); font-family:var(--disp); } .pill-msg{ color:var(--ink2); }
+  .pill-track{ background:#e7dcc0; box-shadow:inset 0 1px 2px rgba(80,60,20,.25); }
+  .pill.goat{ border-color:var(--gold); box-shadow:0 0 0 2px var(--gold), 0 3px 0 rgba(61,92,147,.22); }
+  /* boutons */
+  .btn{ font-family:var(--disp); font-weight:500; font-size:14px; background:var(--green); color:#fff; border:none; border-radius:10px; box-shadow:0 3px 0 var(--greend); transition:transform .08s, filter .12s; }
+  .btn:hover{ filter:brightness(1.07); } .btn:active{ transform:translateY(2px); box-shadow:0 1px 0 var(--greend); }
+  .btn:disabled{ background:#b7bfa9; box-shadow:0 3px 0 #98a086; color:#f3f5ee; }
+  .btn-danger{ background:#d16650; box-shadow:0 3px 0 #a3402d; } .btn-danger:hover{ filter:brightness(1.05); }
+  #scores{ color:var(--ink); font-family:var(--body); } #scores b{ color:var(--line2); } #goal{ color:var(--ink2); }
+  .pl-in{ color:var(--ink); } .pl-idle{ color:#c8901f; } .pl-off{ color:#9aa7ad; } .pl-off b{ color:#9aa7ad !important; }
+  /* barre clutch */
+  #clutchbar{ background:linear-gradient(180deg,rgba(242,182,54,.96),rgba(242,182,54,.35),transparent); color:var(--line2); text-shadow:1px 1px 0 #fff6da; font-family:var(--disp); }
+  #clutchbar b{ color:var(--redd); }
+  #banner{ background:var(--cream); color:var(--ink); border:3px solid var(--line); border-radius:12px; left:7%; right:7%; top:38%; font-family:var(--disp); box-shadow:0 4px 0 var(--line2); }
+  #banner b{ color:var(--redd); }
+  /* podium */
+  #podium{ background:rgba(28,48,40,.6); backdrop-filter:blur(2px); }
+  .podium-cup{ filter:drop-shadow(2px 3px 0 rgba(0,0,0,.25)); }
+  .podium-title{ font-family:var(--disp); color:var(--line2); } .podium-title b{ color:var(--redd); }
+  .podium-list li{ background:var(--cream2); color:var(--ink); }
+  .podium-list li.p1{ background:linear-gradient(90deg,#fbe9b0,#f6da80); border:2px solid var(--gold); } .podium-list b{ color:var(--redd); }
+  .podium-sub{ color:var(--ink2); }
+  /* réglages */
+  .set-card h2{ font-family:var(--disp); color:var(--line2); } .set-card h3{ color:var(--ink2); }
+  .set-row{ color:var(--ink); }
+  .kb-hint{ color:var(--ink2); }
+  .kb-row{ border-bottom:1px solid var(--cream2); color:var(--ink); }
+  .kb-key{ background:var(--paper); border:2px solid var(--cream2); color:var(--ink); } .kb-key.listening{ background:var(--blue); color:#fff; border-color:var(--blue); }
+  /* manette tactile */
+  .dp{ background:var(--cream); border:2px solid var(--line); color:var(--line2); box-shadow:0 2px 0 var(--line2); }
+  .dp.active{ background:var(--blue); color:#fff; }
+  .sys{ background:var(--cream); border:2px solid var(--line); color:var(--line2); }
+  .sys.active{ background:var(--blue); color:#fff; }
+  .face{ border:2px solid #fff; box-shadow:0 3px 0 rgba(0,0,0,.25); } .face.active{ transform:translateY(2px); box-shadow:0 1px 0 rgba(0,0,0,.25); filter:brightness(1.1); }
+  @media (prefers-reduced-motion: reduce){ #bg .track, .pcloud, .pball.spin{ animation:none !important; } }
+</style>
 </head>
 <body>
-<!-- fond de page pixel Johto (2 couches qui se fondent en alternance) -->
-<div id="pgbg"><img alt=""><img alt=""></div>
-<div id="head"><h1>🎯 PokéGeoGuessr</h1><div class="head-btns"><button id="settings-btn" title="Réglages (contrôles)">⚙️</button><button id="mute" title="Sons">🔊</button></div></div>
+<!-- décor pixel cosy Gen-4 qui défile (route de campagne) + nuages -->
+<div id="bg">
+  <div class="track"><img src="/img/landscape.png" alt=""><img src="/img/landscape.png" alt=""></div>
+  <span class="pcloud c1"></span><span class="pcloud c2"></span><span class="pcloud c3"></span>
+</div>
+<div id="head"><h1><span class="pball spin"></span> PokéGeoGuessr</h1><div class="head-btns"><button id="settings-btn" title="Réglages (contrôles)">⚙️</button><button id="mute" title="Sons">🔊</button></div></div>
 
 <!-- MENU -->
 <div id="menu" class="card">
-  <div id="hero"><img alt=""><img alt=""><div class="h-grad"></div><div class="h-title">PokéGeoGuessr</div><div class="h-sub"></div></div>
+  <p class="sub" style="font-family:var(--disp);font-size:15px;color:var(--line2);margin-top:2px">Un GeoGuessr dans Pokémon SoulSilver</p>
   <p class="sub">Crée ou rejoins une room, puis joue directement dans ton navigateur.</p>
   <label>Ton pseudo</label>
   <input id="m-name" maxlength="20" placeholder="Ex : Léo">
@@ -486,34 +584,6 @@ $('set-close').onclick = ()=>{ $('settings').hidden=true; };
 $('set-pad').onchange = (e)=>{ padOn=e.target.checked; localStorage.setItem('pg_pad', padOn?'1':'0'); updatePad(); };
 $('set-reset').onclick = ()=>{ keyMap={...DEFAULT_KEYS}; localStorage.setItem('pg_keymap', JSON.stringify(keyMap)); applyKeybinds(); buildKeybindRows(); };
 updatePad();
-
-// ---------- BANNIÈRES PIXEL JOHTO (fond + hero alternent) ----------
-const BANNERS = [
-  { src:'/banners/matin.png',   name:'Route de Johto — Matin' },
-  { src:'/banners/bois.png',    name:'Bois aux Chênes' },
-  { src:'/banners/tour.png',    name:'Rosalia — Tour Cloche' },
-  { src:'/banners/lac.png',     name:'Lac de Colère' },
-  { src:'/banners/ecorcia.png', name:'Ècorcia' },
-  { src:'/banners/lugia.png',   name:'Îles Tourbillons' },
-];
-function crossfade(wrap, src){
-  const imgs = wrap.querySelectorAll('img');
-  const cur = wrap.querySelector('img.on') || imgs[0];
-  const next = (imgs[0] === cur && wrap.querySelector('img.on')) ? imgs[1] : imgs[0];
-  next.onload = () => { next.classList.add('on'); if (cur !== next) cur.classList.remove('on'); };
-  if (next.src.endsWith(src)) next.onload();
-  next.src = src;
-}
-let bIdx = 0;
-function showBanner(i){
-  crossfade($('pgbg'), BANNERS[i].src);
-  crossfade($('hero'), BANNERS[i].src);
-  const sub = document.querySelector('#hero .h-sub'); if (sub) sub.textContent = BANNERS[i].name;
-}
-// précharge pour des transitions nettes
-BANNERS.forEach(b => { const im = new Image(); im.src = b.src; });
-showBanner(0);
-setInterval(() => { bIdx = (bIdx + 1) % BANNERS.length; showBanner(bIdx); }, 6500);
 </script>
 </body>
 </html>

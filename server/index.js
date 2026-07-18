@@ -24,6 +24,8 @@ app.use((req, res, next) => {
   }
   next();
 });
+// Entrée du site : on arrive directement sur le jeu web (le menu joli).
+app.get('/', (req, res) => res.redirect('/play.html'));
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
 const server = http.createServer(app);
