@@ -41,24 +41,93 @@ function sanitizeFilter(f) {
 }
 
 const rooms = new Map();
+// Crée une room et branche le hook qui rafraîchit la liste des salons.
+function makeRoom(key, filter) {
+  const r = new Room(io, key, pack, config, sanitizeFilter(filter));
+  r.onChange = broadcastRooms;
+  rooms.set(key, r);
+  return r;
+}
 function getRoom(name, filter) {
   const key = String(name || 'main').toLowerCase();
-  // Le filtre n'est appliqué qu'à la CRÉATION (choix du créateur de la room).
-  if (!rooms.has(key)) rooms.set(key, new Room(io, key, pack, config, sanitizeFilter(filter)));
+  if (!rooms.has(key)) makeRoom(key, filter);
   return rooms.get(key);
 }
+// Supprime une room vraiment vide (plus aucun joueur mémorisé).
+function cleanupRoom(r) {
+  if (r && r.players.size === 0) { clearInterval(r.presenceTimer); rooms.delete(r.name); }
+}
+// Liste des salons ouverts (≥1 joueur actif) pour le navigateur de rooms.
+function roomList() {
+  const out = [];
+  for (const [key, r] of rooms) {
+    const active = r.activePlayers();
+    if (active.length === 0) continue;
+    out.push({
+      room: key, host: r.host, players: active.length,
+      ready: active.filter((p) => r.isInGame(p)).length,
+      phase: r.phase, difficulty: r.difficulty,
+      region: r.filter.region, type: r.filter.type,
+    });
+  }
+  return out.sort((a, b) => a.room.localeCompare(b.room));
+}
+function broadcastRooms() { io.emit('rooms', roomList()); }
+// Balayage : purge les rooms fantômes (0 joueur) et rafraîchit la liste.
+setInterval(() => {
+  let changed = false;
+  for (const [k, r] of rooms) if (r.players.size === 0) { clearInterval(r.presenceTimer); rooms.delete(k); changed = true; }
+  if (changed) broadcastRooms();
+}, 30000);
 
 io.on('connection', (socket) => {
   let joined = null; // { room, name }
+  socket.emit('rooms', roomList()); // liste initiale pour le menu
 
+  const enter = (r, name, admin) => {
+    joined = { room: r, name, admin: !!admin };
+    r.addPlayer(socket, name);
+    if (admin) r.addAdmin(socket);
+    return { ok: true, state: r.publicState(), admin: !!admin, adminKey: admin ? r.adminKey : undefined };
+  };
+
+  socket.on('rooms:get', (ack) => { if (ack) ack(roomList()); });
+
+  // Créer une room (le créateur devient meneur ; réglages figés à la création).
+  socket.on('room:create', ({ name, room, filter }, ack) => {
+    name = String(name || '').trim().slice(0, 20);
+    const key = String(room || '').trim().toLowerCase().slice(0, 20);
+    if (!name) return ack && ack({ ok: false, error: 'Pseudo requis' });
+    if (!key) return ack && ack({ ok: false, error: 'Nom de room requis' });
+    if (rooms.has(key)) return ack && ack({ ok: false, error: 'Cette room existe déjà — rejoins-la' });
+    const res = enter(makeRoom(key, filter), name);
+    broadcastRooms();
+    if (ack) ack(res);
+  });
+
+  // Rejoindre un salon existant.
+  socket.on('room:join', ({ name, room }, ack) => {
+    name = String(name || '').trim().slice(0, 20);
+    const key = String(room || '').trim().toLowerCase();
+    if (!name) return ack && ack({ ok: false, error: 'Pseudo requis' });
+    if (!rooms.has(key)) return ack && ack({ ok: false, error: 'Room introuvable' });
+    const res = enter(rooms.get(key), name);
+    broadcastRooms();
+    if (ack) ack(res);
+  });
+
+  // Le meneur lance la partie depuis le salon.
+  socket.on('game:start', () => { if (joined) joined.room.startGame(joined.name); });
+
+  // Legacy (exe/bridge) : join qui démarre la partie immédiatement.
   socket.on('join', ({ name, room, admin, filter }, ack) => {
     name = String(name || '').trim().slice(0, 20);
     if (!name) return ack && ack({ ok: false, error: 'Pseudo requis' });
     const r = getRoom(room, filter);
-    joined = { room: r, name, admin: !!admin };
-    r.addPlayer(socket, name);
-    if (admin) r.addAdmin(socket);
-    if (ack) ack({ ok: true, state: r.publicState(), admin: !!admin, adminKey: admin ? r.adminKey : undefined });
+    const res = enter(r, name, admin);
+    r.startGame(name); // comportement historique
+    broadcastRooms();
+    if (ack) ack(res);
   });
 
   // Admin : passer au round suivant instantanément (pour les tests).
@@ -81,7 +150,7 @@ io.on('connection', (socket) => {
   // Abandon volontaire : quitte la room proprement (contrairement à une
   // déconnexion réseau qui garde la place pour se reconnecter).
   socket.on('leave', () => {
-    if (joined) { joined.room.leaveRoom(socket.id); joined = null; }
+    if (joined) { const r = joined.room; r.leaveRoom(socket.id); joined = null; cleanupRoom(r); broadcastRooms(); }
   });
 
   // Position envoyée par le simulateur web (ou tout client socket).
@@ -90,7 +159,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', () => {
-    if (joined) joined.room.removePlayer(socket.id);
+    if (joined) { joined.room.removePlayer(socket.id); broadcastRooms(); }
   });
 });
 

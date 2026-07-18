@@ -41,7 +41,9 @@ class Room {
     this.difficulty = (filter && filter.difficulty) || 'moyen';
     this.players = new Map(); // socketId -> { name, score }
     this.roundNum = 0;
-    this.phase = 'waiting'; // waiting | playing | intermission
+    this.phase = 'lobby';   // lobby | playing | intermission | gameover
+    this.host = null;       // pseudo du meneur (créateur de la room)
+    this.onChange = null;   // hook (index.js) : la liste des rooms a changé
     this.target = null;
     this.level = 0;
     this.crops = [];
@@ -125,9 +127,11 @@ class Room {
       const sig = this.presenceSignature();
       if (sig === this.lastPresenceSig && !pruned) return;
       this.lastPresenceSig = sig;
+      this.reassignHost();
       this.broadcastState();
       this.checkPassThreshold();
       this.checkZoomThreshold();
+      if (this.onChange) this.onChange();
     }, 5000);
   }
 
@@ -147,8 +151,9 @@ class Room {
     }
     this.players.set(socket.id, { name: playerName, score });
     socket.join(`room:${this.name}`);
-    if (this.phase === 'waiting') this.startRound();
+    if (!this.host) this.host = playerName; // le créateur devient meneur
     this.broadcastState();
+    if (this.onChange) this.onChange();
   }
 
   removePlayer(socketId) {
@@ -156,18 +161,47 @@ class Room {
     // On le marque juste déconnecté pour l'affichage.
     const p = this.players.get(socketId);
     if (p) { p.offline = true; p.offlineSince = Date.now(); }
+    this.reassignHost();
     this.broadcastState();
     this.checkPassThreshold(); // un joueur qui part peut débloquer les votes
     this.checkZoomThreshold();
+    if (this.onChange) this.onChange();
   }
 
   // Abandon volontaire : retire complètement le joueur (contrairement à une
   // simple déconnexion réseau, qui garde sa place pour se reconnecter).
   leaveRoom(socketId) {
     this.players.delete(socketId);
+    this.reassignHost();
     this.broadcastState();
     this.checkPassThreshold();
     this.checkZoomThreshold();
+    if (this.onChange) this.onChange();
+  }
+
+  // Réattribue le meneur au 1er joueur actif si l'actuel n'est plus là.
+  reassignHost() {
+    const active = this.activePlayers();
+    if (!active.some((p) => p.name.toLowerCase() === String(this.host).toLowerCase())) {
+      this.host = active.length ? active[0].name : null;
+    }
+  }
+
+  // Le meneur peut lancer quand TOUS les joueurs actifs ont chargé leur ROM.
+  canStart() {
+    const active = this.activePlayers();
+    return active.length > 0 && active.every((p) => this.isInGame(p));
+  }
+
+  // Lancement de la partie par le meneur (depuis le salon).
+  startGame(byName) {
+    if (this.phase !== 'lobby') return;
+    if (this.host && String(byName).toLowerCase() !== this.host.toLowerCase()) return;
+    if (this.activePlayers().length === 0) return;
+    this.roundNum = 0;
+    for (const p of this.players.values()) p.score = 0;
+    this.startRound(); // passe en phase 'playing'
+    if (this.onChange) this.onChange();
   }
 
   findPlayerByName(playerName) {
@@ -498,10 +532,13 @@ class Room {
       seconds: this.config.podiumSec || 12, standings,
     });
     setTimeout(() => {
+      // Retour au SALON : scores remis à zéro, le meneur relance quand il veut.
       for (const p of this.players.values()) p.score = 0;
       this.roundNum = 0;
-      if (this.players.size > 0) this.startRound();
-      else this.phase = 'waiting';
+      this.phase = 'lobby';
+      this.reassignHost();
+      this.broadcastState();
+      if (this.onChange) this.onChange();
     }, (this.config.podiumSec || 12) * 1000);
   }
 
@@ -547,6 +584,11 @@ class Room {
       atMaxZoom: this.level >= this.pack.zoomLevels.length - 1,
       winScore: this.config.winScore || 0,
       difficulty: this.difficulty,
+      // Salon : meneur, réglages de la room, et si on peut lancer (tous en jeu).
+      host: this.host,
+      region: this.filter.region,
+      type: this.filter.type,
+      canStart: this.canStart(),
       // Fenêtre clutch : active + compteur (propre à la manche) + trouvailles.
       // Le reveal n'est PAS inclus ici -> la cible reste cachée aux non-trouveurs.
       clutchActive: this.clutchActive,

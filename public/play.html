@@ -206,6 +206,29 @@
   .sys.active{ background:var(--blue); color:#fff; }
   .face{ border:2px solid #fff; box-shadow:0 3px 0 rgba(0,0,0,.25); } .face.active{ transform:translateY(2px); box-shadow:0 1px 0 rgba(0,0,0,.25); filter:brightness(1.1); }
   @media (prefers-reduced-motion: reduce){ #bg .track, .pcloud, .pball.spin{ animation:none !important; } }
+  /* ---- navigateur de salons ---- */
+  .m-sec{ font-family:var(--disp); color:var(--line2); font-size:15px; margin:16px 0 6px; padding-bottom:4px; border-bottom:2px solid var(--cream2); }
+  #room-list{ display:flex; flex-direction:column; gap:7px; max-height:220px; overflow:auto; }
+  .m-empty{ color:var(--ink2); font-size:13px; text-align:center; padding:12px 0; }
+  .room-row{ display:flex; align-items:center; gap:8px; background:var(--paper); border:2px solid var(--cream2); border-radius:10px; padding:8px 10px; }
+  .rr-main{ flex:1; min-width:0; } .rr-name{ font-family:var(--disp); color:var(--ink); font-size:14px; }
+  .rr-info{ font-size:11px; color:var(--ink2); }
+  .rr-tag{ font-size:10px; font-weight:700; padding:2px 6px; border-radius:6px; background:var(--cream2); color:var(--line2); }
+  .rr-tag.live{ background:#f6dca0; color:#8a5a10; }
+  .rr-join{ font-family:var(--disp); background:var(--green); color:#fff; border:none; border-radius:8px; padding:7px 13px; box-shadow:0 3px 0 var(--greend); cursor:pointer; font-size:13px; }
+  .rr-join:active{ transform:translateY(2px); box-shadow:0 1px 0 var(--greend); }
+  #m-create{ width:100%; margin-top:14px; font-family:var(--disp); font-weight:700; font-size:18px; background:var(--red); color:#fff; border:none; border-radius:12px; box-shadow:0 4px 0 var(--redd); padding:12px; cursor:pointer; }
+  #m-create:active{ transform:translateY(3px); box-shadow:0 1px 0 var(--redd); }
+  /* ---- salon (lobby) dans la vue de jeu ---- */
+  #lobby{ background:var(--cream); border:3px solid var(--line); border-radius:14px; box-shadow:0 4px 0 var(--line2); padding:14px; display:flex; flex-direction:column; gap:9px; }
+  #lobby h2{ font-family:var(--disp); color:var(--line2); font-size:19px; margin:0; }
+  #lobby-cfg{ font-size:12px; color:var(--ink2); }
+  #lobby-players{ display:flex; flex-direction:column; gap:6px; }
+  .lp{ display:flex; align-items:center; gap:8px; background:var(--paper); border:2px solid var(--cream2); border-radius:9px; padding:7px 10px; font-size:14px; color:var(--ink); }
+  .lp .lp-status{ margin-left:auto; font-size:12px; font-weight:700; }
+  .lp.ready .lp-status{ color:var(--greend); } .lp.wait .lp-status{ color:#c8901f; }
+  #start-btn{ width:100%; font-size:18px; }
+  #start-hint, #lobby-wait{ text-align:center; margin:4px 0 0; }
 </style>
 </head>
 <body>
@@ -219,11 +242,14 @@
 <!-- MENU -->
 <div id="menu" class="card">
   <p class="sub" style="font-family:var(--disp);font-size:15px;color:var(--line2);margin-top:2px">Un GeoGuessr dans Pokémon SoulSilver</p>
-  <p class="sub">Crée ou rejoins une room, puis joue directement dans ton navigateur.</p>
   <label>Ton pseudo</label>
   <input id="m-name" maxlength="20" placeholder="Ex : Léo">
-  <label>Nom de la room</label>
-  <input id="m-room" maxlength="20" placeholder="Ex : soiree">
+
+  <div class="m-sec">🏠 Salons ouverts</div>
+  <div id="room-list"><p class="m-empty">Aucun salon pour l'instant — crées-en un ! 👇</p></div>
+
+  <div class="m-sec">➕ Créer un salon</div>
+  <input id="m-room" maxlength="20" placeholder="Nom du salon (ex : soirée)">
   <div class="row">
     <div><label>Région</label><select id="m-region"><option value="all">Tout</option><option value="johto">Johto</option><option value="kanto">Kanto</option></select></div>
     <div><label>Lieux</label><select id="m-type"><option value="all">Tous</option><option value="ext">Extérieurs</option><option value="int">Intérieurs</option></select></div>
@@ -234,8 +260,8 @@
     <option value="moyen" selected>Moyen — jauge à chaque dézoom</option>
     <option value="difficile">Difficile — aucune jauge</option>
   </select>
-  <button id="m-go">🎮 Jouer</button>
-  <p class="sub" style="margin-top:12px">Le créateur de la room fixe la difficulté/région. Il te faudra ta ROM SoulSilver (.nds) — elle reste sur ta machine.</p>
+  <button id="m-create">Créer le salon</button>
+  <p class="sub" style="margin-top:12px">Tu seras le meneur : tu lances la partie quand tout le monde a chargé sa ROM. Ta ROM SoulSilver (.nds) reste sur ta machine.</p>
 </div>
 
 <!-- JEU -->
@@ -263,12 +289,27 @@
     </div>
   </div>
   <div id="right">
-    <div id="meta"><span>Objectif — Round <b id="round">–</b> · Zoom <b id="zoom">1</b>/4</span><span id="countdown"></span></div>
-    <div id="photo-wrap"><img id="photo" alt="Où est-ce ?"><canvas id="revealCanvas" hidden></canvas><div id="clutchbar" hidden></div><div id="banner" hidden></div></div>
-    <div id="hints"></div>
-    <div class="btns"><button id="zoomvote" class="btn">🔍 Zoom suivant</button><button id="passvote" class="btn">🙋 Demander à passer</button></div>
+    <!-- SALON (phase lobby) -->
+    <div id="lobby" hidden>
+      <h2>Salon « <span id="lobby-room">–</span> »</h2>
+      <div id="lobby-cfg"></div>
+      <div id="lobby-players"></div>
+      <div id="lobby-host" hidden>
+        <button id="start-btn" class="btn">🚀 Lancer la partie</button>
+        <p id="start-hint" class="sub"></p>
+      </div>
+      <p id="lobby-wait" class="sub" hidden>⏳ En attente que le meneur lance la partie…</p>
+      <p class="sub">Charge ta ROM à gauche et balade-toi en attendant. Le meneur lance quand tout le monde est prêt.</p>
+    </div>
+    <!-- PANNEAUX DE JEU (phase playing/intermission) -->
+    <div id="game-panels" hidden style="display:flex;flex-direction:column;gap:10px">
+      <div id="meta"><span>Objectif — Round <b id="round">–</b> · Zoom <b id="zoom">1</b>/4</span><span id="countdown"></span></div>
+      <div id="photo-wrap"><img id="photo" alt="Où est-ce ?"><canvas id="revealCanvas" hidden></canvas><div id="clutchbar" hidden></div><div id="banner" hidden></div></div>
+      <div id="hints"></div>
+      <div class="btns"><button id="zoomvote" class="btn">🔍 Zoom suivant</button><button id="passvote" class="btn">🙋 Demander à passer</button></div>
+      <div id="scores"><span style="color:var(--ink2)">Scores</span> <span id="goal"></span> : <span id="scores-v">–</span></div>
+    </div>
     <div class="btns"><button id="abandon" class="btn btn-danger">🏳️ Quitter</button></div>
-    <div id="scores"><span style="color:#8a93a6">Scores</span> <span id="goal"></span> : <span id="scores-v">–</span></div>
   </div>
 </div>
 
@@ -304,16 +345,44 @@ let cdSecs = 0, cdKey = ''; // décompte local propre à la manche (compteur ser
   if (qp.get('name')) $('m-name').value = qp.get('name');
   if (qp.get('room')) $('m-room').value = qp.get('room');
 })();
-$('m-go').onclick = () => {
+const DIFF = { facile:'Facile', moyen:'Moyen', difficile:'Difficile' };
+const regionLabel = (r) => ({ all:'Johto + Kanto', johto:'Johto', kanto:'Kanto' }[r] || r);
+const typeLabel = (t) => ({ all:'Tous lieux', ext:'Extérieurs', int:'Intérieurs' }[t] || t);
+
+function onEntered(res){
+  if (res && res.ok){ joined = true; $('menu').hidden = true; $('game').hidden = false; apply(res.state); updatePad(); }
+  else alert(res && res.error ? res.error : 'Connexion impossible');
+}
+$('m-create').onclick = () => {
   const name = $('m-name').value.trim(); const rm = $('m-room').value.trim();
-  if (!name) return alert('Pseudo requis'); if (!rm) return alert('Nom de room requis');
-  myName = name; room = rm;
+  if (!name) return alert('Entre ton pseudo'); if (!rm) return alert('Donne un nom au salon');
+  myName = name; room = rm.toLowerCase();
   filter = { region: $('m-region').value, type: $('m-type').value, difficulty: $('m-diff').value };
-  socket.emit('join', { name: myName, room, filter }, (res) => {
-    if (res && res.ok) { joined = true; $('menu').hidden = true; $('game').hidden = false; apply(res.state); updatePad(); }
-    else alert('Connexion impossible' + (res && res.error ? ' : ' + res.error : ''));
-  });
+  socket.emit('room:create', { name: myName, room: rm, filter }, onEntered);
 };
+function joinRoom(key){
+  const name = $('m-name').value.trim();
+  if (!name) return alert('Entre d\'abord ton pseudo en haut ☝️');
+  myName = name; room = key;
+  socket.emit('room:join', { name: myName, room: key }, onEntered);
+}
+// Liste des salons ouverts, mise à jour en direct.
+socket.on('rooms', (list) => {
+  const box = $('room-list'); if (!box) return;
+  if (!list || !list.length){ box.innerHTML = '<p class="m-empty">Aucun salon pour l\'instant — crées-en un ! 👇</p>'; return; }
+  box.innerHTML = '';
+  for (const r of list){
+    const live = r.phase !== 'lobby';
+    const row = document.createElement('div'); row.className = 'room-row';
+    row.innerHTML = `<div class="rr-main"><div class="rr-name">${esc(r.room)}</div>`
+      + `<div class="rr-info">👑 ${esc(r.host||'?')} · ${r.ready}/${r.players} prêt${r.players>1?'s':''} · ${DIFF[r.difficulty]||r.difficulty}</div></div>`
+      + `<span class="rr-tag ${live?'live':''}">${live?'en partie':'salon'}</span>`;
+    const b = document.createElement('button'); b.className = 'rr-join'; b.textContent = 'Rejoindre';
+    b.onclick = () => joinRoom(r.room); row.appendChild(b);
+    box.appendChild(row);
+  }
+});
+$('start-btn').onclick = () => socket.emit('game:start');
 
 // ---------- SONS ----------
 let muted = localStorage.getItem('pg_muted') === '1', actx = null;
@@ -326,8 +395,34 @@ $('mute').onclick = () => { muted=!muted; localStorage.setItem('pg_muted',muted?
 document.addEventListener('click', ()=>{ try{ac();}catch{} }, { once:true });
 
 // ---------- UI JEU ----------
+function renderLobby(s){
+  $('lobby-room').textContent = s.room || room;
+  $('lobby-cfg').textContent = `${DIFF[s.difficulty]||s.difficulty} · premier à ${s.winScore} pts · ${regionLabel(s.region)} · ${typeLabel(s.type)}`;
+  const box = $('lobby-players'); box.innerHTML = '';
+  for (const p of (s.players||[]).filter(p=>!p.offline)){
+    const ready = p.inGame; const el = document.createElement('div');
+    el.className = 'lp ' + (ready ? 'ready' : 'wait');
+    const crown = (s.host && p.name.toLowerCase() === s.host.toLowerCase()) ? '👑 ' : '';
+    el.innerHTML = `<span>${crown}${esc(p.name)}</span><span class="lp-status">${ready ? '🎮 prêt' : '⏳ charge sa ROM…'}</span>`;
+    box.appendChild(el);
+  }
+  const isHost = s.host && myName && s.host.toLowerCase() === myName.toLowerCase();
+  $('lobby-host').hidden = !isHost;
+  $('lobby-wait').hidden = !!isHost;
+  if (isHost){
+    $('start-btn').disabled = !s.canStart;
+    $('start-hint').textContent = s.canStart ? '🚀 Tout le monde est prêt !' : 'En attente que tout le monde charge sa ROM et se balade un peu…';
+  } else {
+    $('lobby-wait').textContent = `⏳ En attente que ${s.host || 'le meneur'} lance la partie…`;
+  }
+}
 function apply(s){
   state = s;
+  // Salon (lobby) vs jeu : on bascule les panneaux selon la phase.
+  const isLobby = s.phase === 'lobby';
+  $('lobby').hidden = !isLobby;
+  $('game-panels').hidden = isLobby;
+  if (isLobby){ renderLobby(s); return; }
   $('round').textContent = s.round; $('zoom').textContent = s.level + 1;
   // Présence : on distingue connecté-et-en-jeu / connecté-mais-pas-en-jeu /
   // déconnecté, pour comprendre d'où vient le seuil des votes.
