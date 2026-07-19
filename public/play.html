@@ -589,7 +589,10 @@ function drawReveal(reveal){
 function loadScript(src){ return new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=src; s.onload=res; s.onerror=()=>rej(new Error('échec '+src)); document.head.appendChild(s); }); }
 const HDR_OFF=0x3FFE0C, RAM=0x400000;
 function heap(){ const M=window.Module; return M&&M.HEAPU8?M.HEAPU8:null; }
-function scanCandidates(H){ const N=H.length,out=[]; for(let p=0;p<N-4;p++){ if(H[p]===0x49&&H[p+1]===0x50&&H[p+2]===0x47&&H[p+3]===0x46){ const b=p-HDR_OFF; if(b>=0&&b+RAM<=N)out.push(b); if(out.length>400)break; } } return out; }
+// Cherche la base RAM via le gamecode de N'IMPORTE quelle version HGSS (au lieu
+// du seul « IPGF ») : SoulSilver = IP G ?, HeartGold = IP K ?, région E/F/D/I/S/J.
+// La base validée, les mêmes adresses position/mapID marchent (vérifié sur HG-FR).
+function scanCandidates(H){ const N=H.length,out=[]; for(let p=0;p<N-4;p++){ if(H[p]!==0x49||H[p+1]!==0x50)continue; const c2=H[p+2],c3=H[p+3]; if((c2===0x47||c2===0x4B)&&(c3===0x45||c3===0x46||c3===0x44||c3===0x49||c3===0x53||c3===0x4A)){ const b=p-HDR_OFF; if(b>=0&&b+RAM<=N)out.push(b); if(out.length>400)break; } } return out; }
 function reader(H,base){ const u8=a=>H[base+((a-0x02000000)&(RAM-1))]; const u16=a=>u8(a)|(u8(a+1)<<8); const u32=a=>(u16(a)|(u16(a+2)<<16))>>>0; return {u16,u32}; }
 function validBase(H,base){ const {u16,u32}=reader(H,base); const pb=u32(0x020231F8); if(pb<0x02000000||pb>=0x02400000)return false; const X=u16(pb+2),Y=u16(pb-0x0E); if(!(X<2048&&Y<2048))return false; const fsp=u32(0x021D1130); if(fsp<0x02100000||fsp>=0x02400000)return false; const loc=u32(fsp+0x20); if(loc<0x02100000||loc>=0x02400000)return false; return u32(loc)<600; }
 function readPos(H,base){ const {u16,u32}=reader(H,base); const out={}; const b=u32(0x020231F8); if(b>=0x02000000&&b<0x02400000){ out.X=u16(b+2); out.Y=u16(b-0x0E); } const fsp=u32(0x021D1130); if(fsp>=0x02100000&&fsp<0x02400000){ const loc=u32(fsp+0x20); if(loc>=0x02100000&&loc<0x02400000)out.mapID=u32(loc); } return out; }
