@@ -609,10 +609,12 @@ function gamecodeAt(H,base){ const {u8}=reader(H,base); return String.fromCharCo
 function cfgFor(H,base){ return ADDR_BY_CODE[gamecodeAt(H,base)] || ADDR_DEFAULT; }
 function inRAM(p){ return p>=0x02000000 && p<0x02400000; }
 function readPosCfg(H,base,cfg){ const {u16,u32}=reader(H,base);
-  if(cfg.map==null){ // version sans mapID : vote de plusieurs pointeurs
-    const votes={};
-    for(const ptr of cfg.posPtrs){ const b=u32(ptr); if(!inRAM(b))continue; const X=u16(b+cfg.posX),Y=u16(b+cfg.posY);
-      if(X<4096&&Y<4096){ const k=X+','+Y; votes[k]=(votes[k]||0)+1; if(votes[k]>=2)return {X,Y}; } }
+  if(cfg.map==null){ // version sans mapID : exige >=3 pointeurs vers le MÊME
+    // objet joueur (dans le heap) -> rejette les fausses bases (copie ROM du gamecode).
+    const counts={};
+    for(const ptr of cfg.posPtrs){ const b=u32(ptr); if(b<0x02080000||b>=0x02300000)continue; counts[b]=(counts[b]||0)+1; }
+    let bb=0,bc=0; for(const b in counts){ if(counts[b]>bc){ bc=counts[b]; bb=+b; } }
+    if(bc>=3){ const X=u16(bb+cfg.posX),Y=u16(bb+cfg.posY); if(X<4096&&Y<4096) return {X,Y}; }
     return {};
   }
   const b=u32(cfg.posPtrs[0]); const out={};
