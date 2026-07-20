@@ -625,12 +625,17 @@ function readPosCfg(H,base,cfg){ const {u16,u32}=reader(H,base);
 function validBase(H,base){ const cfg=cfgFor(H,base); const p=readPosCfg(H,base,cfg);
   if(p.X===undefined)return false; if(cfg.map!=null && p.mapID===undefined)return false; return true; }
 function readPos(H,base){ return readPosCfg(H,base,cfgFor(H,base)); }
-let candidates=[], lastHeapLen=0, ramBase=null, polling=false, lastPosKey='';
+let candidates=[], lastHeapLen=0, ramBase=null, polling=false, lastPosKey='', lastScanT=0;
 function startPolling(){
   if(polling)return; polling=true;
   setInterval(()=>{
     const H=heap(); if(!H)return;
-    if(H.length!==lastHeapLen){ lastHeapLen=H.length; candidates=scanCandidates(H); ramBase=null; }
+    const now=Date.now();
+    if(H.length!==lastHeapLen){ lastHeapLen=H.length; candidates=scanCandidates(H); lastScanT=now; ramBase=null; }
+    // Le gamecode de la vraie base RAM n'apparaît qu'APRÈS le boot du jeu (l'ému
+    // démarre avant). Tant qu'aucune base n'est verrouillée, on re-scanne toutes
+    // les ~2 s pour rattraper la base qui vient d'apparaître.
+    else if(ramBase===null && now-lastScanT>2000){ candidates=scanCandidates(H); lastScanT=now; }
     if(ramBase===null||!validBase(H,ramBase)){ ramBase=null; for(const c of candidates) if(validBase(H,c)){ ramBase=c; break; } }
     if(ramBase===null){ $('emustat').textContent='⏳ En jeu ? Fais Continuer et marche…'; return; }
     const p=readPos(H,ramBase);
