@@ -592,7 +592,8 @@ function heap(){ const M=window.Module; return M&&M.HEAPU8?M.HEAPU8:null; }
 // Cherche la base RAM via le gamecode de N'IMPORTE quelle version HGSS (au lieu
 // du seul « IPGF ») : SoulSilver = IP G ?, HeartGold = IP K ?, région E/F/D/I/S/J.
 // La base validée, les mêmes adresses position/mapID marchent (vérifié sur HG-FR).
-function scanCandidates(H){ const N=H.length,out=[]; for(let p=0;p<N-4;p++){ if(H[p]!==0x49||H[p+1]!==0x50)continue; const c2=H[p+2],c3=H[p+3]; if((c2===0x47||c2===0x4B)&&(c3===0x45||c3===0x46||c3===0x44||c3===0x49||c3===0x53||c3===0x4A)){ const b=p-HDR_OFF; if(b>=0&&b+RAM<=N)out.push(b); if(out.length>400)break; } } return out; }
+function scanRange(H,lo,hi){ const N=H.length,out=[]; lo=Math.max(0,lo|0); hi=Math.min(hi|0,N-4); for(let p=lo;p<hi;p++){ if(H[p]!==0x49||H[p+1]!==0x50)continue; const c2=H[p+2],c3=H[p+3]; if((c2===0x47||c2===0x4B)&&(c3===0x45||c3===0x46||c3===0x44||c3===0x49||c3===0x53||c3===0x4A)){ const b=p-HDR_OFF; if(b>=0&&b+RAM<=N){ out.push(b); if(out.length>400)break; } } } return out; }
+function scanCandidates(H){ return scanRange(H,0,H.length); }
 function reader(H,base){ const u8=a=>H[base+((a-0x02000000)&(RAM-1))]; const u16=a=>u8(a)|(u8(a+1)<<8); const u32=a=>(u16(a)|(u16(a+2)<<16))>>>0; return {u8,u16,u32}; }
 // Les builds régionaux ont des adresses différentes (voir HANDOFF). On choisit
 // la config selon le gamecode lu en RAM.
@@ -635,7 +636,13 @@ function startPolling(){
     // Le gamecode de la vraie base RAM n'apparaît qu'APRÈS le boot du jeu (l'ému
     // démarre avant). Tant qu'aucune base n'est verrouillée, on re-scanne toutes
     // les ~2 s pour rattraper la base qui vient d'apparaître.
-    else if(ramBase===null && now-lastScanT>2000){ candidates=scanCandidates(H); lastScanT=now; }
+    else if(ramBase===null && now-lastScanT>2000){ lastScanT=now;
+      if(candidates.length){ // re-scan LÉGER : juste une fenêtre autour des zones déjà repérées
+        let lo=Infinity,hi=0; for(const c of candidates){ if(c<lo)lo=c; if(c>hi)hi=c; }
+        const win=scanRange(H, lo+HDR_OFF-0x800000, hi+HDR_OFF+0x800000);
+        const s=new Set(candidates); for(const c of win) s.add(c); candidates=[...s];
+      } else candidates=scanCandidates(H);
+    }
     if(ramBase===null||!validBase(H,ramBase)){ ramBase=null; for(const c of candidates) if(validBase(H,c)){ ramBase=c; break; } }
     if(ramBase===null){ $('emustat').textContent='⏳ En jeu ? Fais Continuer et marche…'; return; }
     const p=readPos(H,ramBase);
