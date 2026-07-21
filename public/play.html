@@ -38,7 +38,7 @@
   #photo-wrap { position:relative; width:100%; aspect-ratio:4/3; background:#000; border-radius:10px; overflow:hidden; }
   #photo { width:100%; height:100%; object-fit:contain; image-rendering:pixelated; }
   #revealCanvas { position:absolute; inset:0; width:100%; height:100%; background:#0b0e14; }
-  #banner { position:absolute; left:0; right:0; top:42%; text-align:center; font-size:20px; font-weight:bold; background:rgba(0,0,0,.55); padding:10px; }
+  #banner { position:absolute; left:0; right:0; bottom:0; top:auto; text-align:center; font-size:14px; font-weight:bold; background:rgba(0,0,0,.6); padding:7px 10px; }
   /* barre clutch en haut de la photo (ne cache pas le centre : on doit encore lire la photo pour courir) */
   #clutchbar { position:absolute; left:0; right:0; top:0; z-index:3; text-align:center; font-size:14px; font-weight:700; color:#fff; padding:7px 8px; background:linear-gradient(180deg,rgba(6,8,14,.9),rgba(6,8,14,.35),rgba(6,8,14,0)); text-shadow:0 1px 3px #000; animation:fadein .25s ease; }
   #clutchbar b { color:#ffd76a; }
@@ -190,7 +190,7 @@
   /* barre clutch */
   #clutchbar{ background:linear-gradient(180deg,rgba(242,182,54,.96),rgba(242,182,54,.35),transparent); color:var(--line2); text-shadow:1px 1px 0 #fff6da; font-family:var(--disp); }
   #clutchbar b{ color:var(--redd); }
-  #banner{ background:var(--cream); color:var(--ink); border:3px solid var(--line); border-radius:12px; left:7%; right:7%; top:38%; font-family:var(--disp); box-shadow:0 4px 0 var(--line2); }
+  #banner{ background:rgba(251,244,225,.93); color:var(--ink); border:0; border-top:3px solid var(--line); border-radius:0; left:0; right:0; top:auto; bottom:0; font-family:var(--disp); font-size:14px; padding:7px 10px; box-shadow:none; }
   #banner b{ color:var(--redd); }
   /* podium */
   #podium{ background:rgba(28,48,40,.6); backdrop-filter:blur(2px); }
