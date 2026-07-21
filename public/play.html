@@ -620,9 +620,12 @@ function readPosCfg(H,base,cfg){ const {u16,u32}=reader(H,base);
     for(const ptr of cfg.posPtrs){ const b=u32(ptr); if(b<0x02080000||b>=0x02300000)continue; counts[b]=(counts[b]||0)+1; }
     let bb=0,bc=0; for(const b in counts){ if(counts[b]>bc){ bc=counts[b]; bb=+b; } }
     if(bc>=3){ const X=u16(bb+cfg.posX),Y=u16(bb+cfg.posY); if(X<4096&&Y<4096){ const out={X,Y};
-      if(cfg.mapReaders){ for(const [ptr,ch] of cfg.mapReaders){ let p=u32(ptr); let ok=(p>=0x02080000&&p<0x02300000);
-        for(let i=0; ok && i<ch.length-1; i++){ p=u32(p+ch[i]); ok=(p>=0x02080000&&p<0x02300000); }
-        if(ok){ const m=u32(p+ch[ch.length-1]); if(m>=0&&m<600){ out.mapID=m; break; } } } }
+      if(cfg.mapReaders){ const votes={};
+        for(const [ptr,ch] of cfg.mapReaders){ let p=u32(ptr); let ok=(p>=0x02080000&&p<0x02300000);
+          for(let i=0; ok && i<ch.length-1; i++){ p=u32(p+ch[i]); ok=(p>=0x02080000&&p<0x02300000); }
+          if(ok){ const m=u32(p+ch[ch.length-1]); if(m>=0&&m<600) votes[m]=(votes[m]||0)+1; } }
+        let bm=-1,mv=0; for(const k in votes){ if(votes[k]>mv){ mv=votes[k]; bm=+k; } }
+        if(mv>=2) out.mapID=bm; }
       return out; } }
     return {};
   }
