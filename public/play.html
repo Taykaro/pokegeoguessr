@@ -604,8 +604,11 @@ function reader(H,base){ const u8=a=>H[base+((a-0x02000000)&(RAM-1))]; const u16
 const ADDR_DEFAULT = { posPtrs:[0x020231F8], posX:2, posY:-0x0E, map:0x021D1130, mapLoc:0x20 };
 // Config anglaise partagée : SoulSilver (IPGE) et HeartGold (IPKE) = même build
 // régional -> mêmes adresses (comme FR : IPGF/IPKF partagent ADDR_DEFAULT).
-// mapID anglais (calibré au navigateur) : fsp = u32[mapPtr], mapID = u32[fsp+mapOff].
-const ADDR_EN = { posPtrs:[0x020C0120,0x020C41B8,0x020C4248,0x020C43B8,0x020C477C,0x020C649C,0x020C6DBC], posX:0x376, posY:0x366, mapPtr:0x0226F074, mapOff:0x34C };
+// mapID anglais (calibré au navigateur) : globals STATIQUES stables (section
+// données 0x0200Bxxx), chaîne de pointeurs -> mapID. Plusieurs lecteurs en repli
+// (on prend le 1er qui donne un mapID valide) ; même numérotation que la FR.
+const ADDR_EN = { posPtrs:[0x020C0120,0x020C41B8,0x020C4248,0x020C43B8,0x020C477C,0x020C649C,0x020C6DBC], posX:0x376, posY:0x366,
+  mapReaders:[[0x0200B5A0,[0xA74,0xE8,0x34C]],[0x020074BC,[0xB34,0xE8,0x34C]],[0x0200B864,[0xA50,0xE8,0x34C]],[0x0200B648,[0xA74,0xE8,0x34C]]] };
 const ADDR_BY_CODE = { IPGE: ADDR_EN, IPKE: ADDR_EN };
 function gamecodeAt(H,base){ const {u8}=reader(H,base); return String.fromCharCode(u8(0x027FFE0C),u8(0x027FFE0D),u8(0x027FFE0E),u8(0x027FFE0F)); }
 function cfgFor(H,base){ return ADDR_BY_CODE[gamecodeAt(H,base)] || ADDR_DEFAULT; }
@@ -617,7 +620,9 @@ function readPosCfg(H,base,cfg){ const {u16,u32}=reader(H,base);
     for(const ptr of cfg.posPtrs){ const b=u32(ptr); if(b<0x02080000||b>=0x02300000)continue; counts[b]=(counts[b]||0)+1; }
     let bb=0,bc=0; for(const b in counts){ if(counts[b]>bc){ bc=counts[b]; bb=+b; } }
     if(bc>=3){ const X=u16(bb+cfg.posX),Y=u16(bb+cfg.posY); if(X<4096&&Y<4096){ const out={X,Y};
-      if(cfg.mapPtr){ const fsp=u32(cfg.mapPtr); if(inRAM(fsp)){ const m=u32(fsp+cfg.mapOff); if(m>=0&&m<600) out.mapID=m; } }
+      if(cfg.mapReaders){ for(const [ptr,ch] of cfg.mapReaders){ let p=u32(ptr); let ok=(p>=0x02080000&&p<0x02300000);
+        for(let i=0; ok && i<ch.length-1; i++){ p=u32(p+ch[i]); ok=(p>=0x02080000&&p<0x02300000); }
+        if(ok){ const m=u32(p+ch[ch.length-1]); if(m>=0&&m<600){ out.mapID=m; break; } } } }
       return out; } }
     return {};
   }
