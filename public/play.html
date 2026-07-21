@@ -242,45 +242,47 @@
   <div class="track"><img src="/img/landscape.png" alt=""><img src="/img/landscape.png" alt=""></div>
   <span class="pcloud c1"></span><span class="pcloud c2"></span><span class="pcloud c3"></span>
 </div>
-<div id="head"><h1><img class="brand" src="/img/logo.png" alt=""> PokéGeoGuessr</h1><div class="head-btns"><button id="settings-btn" title="Réglages (contrôles)">⚙️</button><button id="mute" title="Sons">🔊</button></div></div>
+<div id="head"><h1><img class="brand" src="/img/logo.png" alt=""> PokéGeoGuessr</h1><div class="head-btns"><button id="settings-btn" data-i18n-title="set.title" title="Réglages (contrôles)">⚙️</button><button id="mute" data-i18n-title="sound.title" title="Sons">🔊</button></div></div>
 
 <!-- MENU -->
 <div id="menu" class="card">
-  <p class="sub" style="font-family:var(--disp);font-size:15px;color:var(--line2);margin-top:2px">Un GeoGuessr dans Pokémon SoulSilver</p>
-  <label>Ton pseudo</label>
-  <input id="m-name" maxlength="20" placeholder="Ex : Léo">
-
-  <div class="m-sec">🏠 Salons ouverts</div>
-  <div id="room-list"><p class="m-empty">Aucun salon pour l'instant — crées-en un ! 👇</p></div>
-
-  <div class="m-sec">➕ Créer un salon</div>
-  <input id="m-room" maxlength="20" placeholder="Nom du salon (ex : soirée)">
+  <p class="sub" data-i18n="menu.tagline" style="font-family:var(--disp);font-size:15px;color:var(--line2);margin-top:2px">Un GeoGuessr dans Pokémon SoulSilver</p>
   <div class="row">
-    <div><label>Région</label><select id="m-region"><option value="all">Tout</option><option value="johto">Johto</option><option value="kanto">Kanto</option></select></div>
-    <div><label>Lieux</label><select id="m-type"><option value="all">Tous</option><option value="ext">Extérieurs</option><option value="int">Intérieurs</option></select></div>
+    <div style="flex:2"><label data-i18n="menu.nick">Ton pseudo</label><input id="m-name" maxlength="20" data-i18n-ph="menu.nickPh" placeholder="Ex : Léo"></div>
+    <div style="flex:1"><label data-i18n="menu.lang">Langue</label><select id="m-lang"><option value="fr">Français</option><option value="en">English</option></select></div>
   </div>
-  <label>Difficulté</label>
+
+  <div class="m-sec" data-i18n="menu.rooms">🏠 Salons ouverts</div>
+  <div id="room-list"><p class="m-empty" data-i18n="menu.noRooms">Aucun salon pour l'instant — crées-en un ! 👇</p></div>
+
+  <div class="m-sec" data-i18n="menu.create">➕ Créer un salon</div>
+  <input id="m-room" maxlength="20" data-i18n-ph="menu.roomPh" placeholder="Nom du salon (ex : soirée)">
+  <div class="row">
+    <div><label data-i18n="menu.region">Région</label><select id="m-region"><option value="all" data-i18n="opt.all">Tout</option><option value="johto">Johto</option><option value="kanto">Kanto</option></select></div>
+    <div><label data-i18n="menu.type">Lieux</label><select id="m-type"><option value="all" data-i18n="type.all">Tous</option><option value="ext" data-i18n="type.ext">Extérieurs</option><option value="int" data-i18n="type.int">Intérieurs</option></select></div>
+  </div>
+  <label data-i18n="menu.diff">Difficulté</label>
   <select id="m-diff">
-    <option value="facile">Facile — jauge en direct</option>
-    <option value="moyen" selected>Moyen — jauge à chaque dézoom</option>
-    <option value="difficile">Difficile — aucune jauge</option>
+    <option value="facile" data-i18n="diff.facileOpt">Facile — jauge en direct</option>
+    <option value="moyen" selected data-i18n="diff.moyenOpt">Moyen — jauge à chaque dézoom</option>
+    <option value="difficile" data-i18n="diff.difficileOpt">Difficile — aucune jauge</option>
   </select>
   <div class="row">
-    <div><label>Joueurs max</label><select id="m-max">
-      <option value="0">Illimité</option><option value="2">2</option><option value="3">3</option>
+    <div><label data-i18n="menu.maxp">Joueurs max</label><select id="m-max">
+      <option value="0" data-i18n="menu.unlimited">Illimité</option><option value="2">2</option><option value="3">3</option>
       <option value="4">4</option><option value="6" selected>6</option><option value="8">8</option>
       <option value="10">10</option><option value="16">16</option>
     </select></div>
-    <div><label>Mot de passe (option)</label><input id="m-pass" maxlength="24" placeholder="vide = public"></div>
+    <div><label data-i18n="menu.pass">Mot de passe (option)</label><input id="m-pass" maxlength="24" data-i18n-ph="menu.passPh" placeholder="vide = public"></div>
   </div>
-  <button id="m-create">Créer le salon</button>
-  <p class="sub" style="margin-top:12px">Tu seras le meneur : tu lances la partie quand tout le monde a chargé sa ROM. Ta ROM SoulSilver (.nds) reste sur ta machine.</p>
+  <button id="m-create" data-i18n="menu.createBtn">Créer le salon</button>
+  <p class="sub" data-i18n="menu.hostNote" style="margin-top:12px">Tu seras le meneur : tu lances la partie quand tout le monde a chargé sa ROM. Ta ROM SoulSilver (.nds) reste sur ta machine.</p>
 </div>
 
 <!-- JEU -->
 <div id="game" hidden>
   <div id="left">
-    <div id="rompick" class="card"><input id="rom" type="file" accept=".nds"><div id="emustat">Choisis ta ROM SoulSilver (.nds) pour démarrer.</div></div>
+    <div id="rompick" class="card"><input id="rom" type="file" accept=".nds"><div id="emustat" data-i18n="emu.pickRom">Choisis ta ROM SoulSilver (.nds) pour démarrer.</div></div>
     <div id="emuwrap"><canvas id="top-screen" width="256" height="192"></canvas><canvas id="bottom-screen" width="256" height="192"></canvas></div>
     <div id="pad" hidden>
       <div class="dpad">
@@ -304,25 +306,25 @@
   <div id="right">
     <!-- SALON (phase lobby) -->
     <div id="lobby" hidden>
-      <h2>Salon « <span id="lobby-room">–</span> »</h2>
+      <h2><span data-i18n="lobby.roomWord">Salon</span> « <span id="lobby-room">–</span> »</h2>
       <div id="lobby-cfg"></div>
       <div id="lobby-players"></div>
       <div id="lobby-host" hidden>
-        <button id="start-btn" class="btn">🚀 Lancer la partie</button>
+        <button id="start-btn" class="btn" data-i18n="lobby.start">🚀 Lancer la partie</button>
         <p id="start-hint" class="sub"></p>
       </div>
-      <p id="lobby-wait" class="sub" hidden>⏳ En attente que le meneur lance la partie…</p>
-      <p class="sub">Charge ta ROM à gauche et balade-toi en attendant. Le meneur lance quand tout le monde est prêt.</p>
+      <p id="lobby-wait" class="sub" data-i18n="lobby.waitDefault" hidden>⏳ En attente que le meneur lance la partie…</p>
+      <p class="sub" data-i18n="lobby.note">Charge ta ROM à gauche et balade-toi en attendant. Le meneur lance quand tout le monde est prêt.</p>
     </div>
     <!-- PANNEAUX DE JEU (phase playing/intermission) -->
     <div id="game-panels" hidden style="display:flex;flex-direction:column;gap:10px">
-      <div id="meta"><span>Objectif — Round <b id="round">–</b> · Zoom <b id="zoom">1</b>/4</span><span id="countdown"></span></div>
-      <div id="photo-wrap"><img id="photo" alt="Où est-ce ?"><canvas id="revealCanvas" hidden></canvas><div id="clutchbar" hidden></div><div id="banner" hidden></div></div>
+      <div id="meta"><span><span data-i18n="game.objective">Objectif</span> — <span data-i18n="game.round">Round</span> <b id="round">–</b> · <span data-i18n="game.zoom">Zoom</span> <b id="zoom">1</b>/4</span><span id="countdown"></span></div>
+      <div id="photo-wrap"><img id="photo" alt=""><canvas id="revealCanvas" hidden></canvas><div id="clutchbar" hidden></div><div id="banner" hidden></div></div>
       <div id="hints"></div>
       <div class="btns"><button id="zoomvote" class="btn">🔍 Zoom suivant</button><button id="passvote" class="btn">🙋 Demander à passer</button></div>
-      <div id="scores"><span style="color:var(--ink2)">Scores</span> <span id="goal"></span> : <span id="scores-v">–</span></div>
+      <div id="scores"><span style="color:var(--ink2)" data-i18n="game.scores">Scores</span> <span id="goal"></span> : <span id="scores-v">–</span></div>
     </div>
-    <div class="btns"><button id="abandon" class="btn btn-danger">🏳️ Quitter</button></div>
+    <div class="btns"><button id="abandon" class="btn btn-danger" data-i18n="game.quit">🏳️ Quitter</button></div>
   </div>
 </div>
 
@@ -332,14 +334,15 @@
 <!-- RÉGLAGES -->
 <div id="settings" hidden>
   <div class="set-card">
-    <h2>⚙️ Réglages</h2>
-    <div class="set-row"><label><input type="checkbox" id="set-pad"> Manette tactile à l'écran (téléphone)</label></div>
-    <h3>Touches clavier (ordinateur)</h3>
-    <p class="kb-hint">Clique sur une touche puis appuie sur la nouvelle touche du clavier.</p>
+    <h2 data-i18n="set.title2">⚙️ Réglages</h2>
+    <div class="set-row"><label data-i18n="menu.lang" for="set-lang">Langue</label> <select id="set-lang"><option value="fr">Français</option><option value="en">English</option></select></div>
+    <div class="set-row"><label><input type="checkbox" id="set-pad"> <span data-i18n="set.pad">Manette tactile à l'écran (téléphone)</span></label></div>
+    <h3 data-i18n="set.keys">Touches clavier (ordinateur)</h3>
+    <p class="kb-hint" data-i18n="set.keysHint">Clique sur une touche puis appuie sur la nouvelle touche du clavier.</p>
     <div id="keybinds"></div>
     <div class="btns" style="margin-top:14px">
-      <button id="set-reset" class="btn">↺ Défaut</button>
-      <button id="set-close" class="btn">Fermer</button>
+      <button id="set-reset" class="btn" data-i18n="set.reset">↺ Défaut</button>
+      <button id="set-close" class="btn" data-i18n="set.close">Fermer</button>
     </div>
   </div>
 </div>
@@ -347,6 +350,99 @@
 <script src="/socket.io/socket.io.js"></script>
 <script>
 const $ = (id) => document.getElementById(id);
+
+// ---------- LANGUE (FR / EN) ----------
+const I18N = {
+  fr:{
+    'set.title':'Réglages (contrôles)','sound.title':'Sons',
+    'menu.tagline':'Un GeoGuessr dans Pokémon SoulSilver',
+    'menu.nick':'Ton pseudo','menu.nickPh':'Ex : Léo',
+    'menu.rooms':'🏠 Salons ouverts','menu.noRooms':'Aucun salon pour l\'instant — crées-en un ! 👇',
+    'menu.create':'➕ Créer un salon','menu.roomPh':'Nom du salon (ex : soirée)',
+    'menu.region':'Région','menu.type':'Lieux',
+    'opt.all':'Tout','type.all':'Tous','type.ext':'Extérieurs','type.int':'Intérieurs',
+    'menu.diff':'Difficulté','diff.facileOpt':'Facile — jauge en direct','diff.moyenOpt':'Moyen — jauge à chaque dézoom','diff.difficileOpt':'Difficile — aucune jauge',
+    'menu.maxp':'Joueurs max','menu.unlimited':'Illimité','menu.pass':'Mot de passe (option)','menu.passPh':'vide = public',
+    'menu.createBtn':'Créer le salon','menu.lang':'Langue',
+    'menu.hostNote':'Tu seras le meneur : tu lances la partie quand tout le monde a chargé sa ROM. Ta ROM SoulSilver (.nds) reste sur ta machine.',
+    'emu.pickRom':'Choisis ta ROM SoulSilver (.nds) pour démarrer.',
+    'emu.loading':'⏳ Chargement de l\'émulateur…','emu.launched':'✅ Émulateur lancé — fais Continuer dans le jeu',
+    'emu.inGame':'⏳ En jeu ? Fais Continuer et marche…','emu.pos':'✅ Ta position : map {map} — ({x}, {y})',
+    'game.where':'Où est-ce ?','game.objective':'Objectif','game.round':'Round','game.zoom':'Zoom',
+    'game.scores':'Scores','game.quit':'🏳️ Quitter',
+    'lobby.start':'🚀 Lancer la partie','lobby.waitDefault':'⏳ En attente que le meneur lance la partie…',
+    'lobby.note':'Charge ta ROM à gauche et balade-toi en attendant. Le meneur lance quand tout le monde est prêt.',
+    'lobby.roomWord':'Salon','lobby.firstTo':'premier à {n} pts','lobby.firstToShort':'premier à {n}',
+    'lobby.maxPlayers':'max {n} joueurs','lobby.private':'🔒 privé',
+    'lobby.ready':'🎮 prêt','lobby.loading':'⏳ charge sa ROM…',
+    'lobby.allReady':'🚀 Tout le monde est prêt !','lobby.waitAll':'En attente que tout le monde charge sa ROM et se balade un peu…',
+    'lobby.waitHost':'⏳ En attente que {host} lance la partie…','lobby.theHost':'le meneur',
+    'set.title2':'⚙️ Réglages','set.pad':'Manette tactile à l\'écran (téléphone)','set.keys':'Touches clavier (ordinateur)',
+    'set.keysHint':'Clique sur une touche puis appuie sur la nouvelle touche du clavier.','set.reset':'↺ Défaut','set.close':'Fermer',
+    'room.join':'Rejoindre','room.live':'● en partie','room.passPrompt':'🔒 Mot de passe du salon « {room} » :',
+    'err.cantJoin':'Connexion impossible','err.enterNick':'Entre ton pseudo','err.roomName':'Donne un nom au salon','err.nickFirst':'Entre d\'abord ton pseudo en haut ☝️',
+    'pres.off':'déconnecté','pres.in':'en jeu','pres.idle':'connecté, pas en jeu',
+    'vote.pass':'🙋 Demander à passer ({got}/{need})','vote.passWait':'✅ En attente ({got}/{need})',
+    'vote.zoom':'🔍 Zoom suivant ({got}/{need})','vote.zoomWait':'✅ Zoom ({got}/{need})','vote.zoomMax':'🔍 Zoom max',
+    'clutch.mine':'✅ Trouvé <b>+{pts}</b> — en attente des autres… <b>{t}</b>','clutch.other':'🎉 <b>{name}</b> a trouvé ! Rejoins-le vite — <b>{t}</b>',
+    'cd.zoomMax':'zoom max','cd.zoomout':'dézoom {t}',
+    'over.winner':'Victoire de <b>{winner}</b> !','over.newGame':'Nouvelle partie dans {sec}s…',
+    'won.clutchExtra':' · +{n} au clutch','won.head':'🏁 {winner} +{pts}{extra}','won.nobody':'🏁 personne n\'a trouvé','reveal.target':'cible',
+    'diff.facile':'Facile','diff.moyen':'Moyen','diff.difficile':'Difficile','region.all':'Johto + Kanto',
+    'btn.up':'Haut ▲','btn.down':'Bas ▼','btn.left':'Gauche ◀','btn.right':'Droite ▶','btn.x':'X (menu)',
+  },
+  en:{
+    'set.title':'Settings (controls)','sound.title':'Sound',
+    'menu.tagline':'A GeoGuessr inside Pokémon SoulSilver',
+    'menu.nick':'Your nickname','menu.nickPh':'e.g. Leo',
+    'menu.rooms':'🏠 Open rooms','menu.noRooms':'No rooms yet — create one! 👇',
+    'menu.create':'➕ Create a room','menu.roomPh':'Room name (e.g. party)',
+    'menu.region':'Region','menu.type':'Places',
+    'opt.all':'All','type.all':'All','type.ext':'Outdoor','type.int':'Indoor',
+    'menu.diff':'Difficulty','diff.facileOpt':'Easy — live gauge','diff.moyenOpt':'Medium — gauge on each zoom-out','diff.difficileOpt':'Hard — no gauge',
+    'menu.maxp':'Max players','menu.unlimited':'Unlimited','menu.pass':'Password (optional)','menu.passPh':'empty = public',
+    'menu.createBtn':'Create room','menu.lang':'Language',
+    'menu.hostNote':'You\'ll be the host: you start the game once everyone has loaded their ROM. Your SoulSilver ROM (.nds) stays on your machine.',
+    'emu.pickRom':'Choose your SoulSilver ROM (.nds) to start.',
+    'emu.loading':'⏳ Loading the emulator…','emu.launched':'✅ Emulator running — pick Continue in the game',
+    'emu.inGame':'⏳ In game? Pick Continue and walk…','emu.pos':'✅ Your position: map {map} — ({x}, {y})',
+    'game.where':'Where is it?','game.objective':'Target','game.round':'Round','game.zoom':'Zoom',
+    'game.scores':'Scores','game.quit':'🏳️ Leave',
+    'lobby.start':'🚀 Start the game','lobby.waitDefault':'⏳ Waiting for the host to start…',
+    'lobby.note':'Load your ROM on the left and walk around while waiting. The host starts when everyone is ready.',
+    'lobby.roomWord':'Room','lobby.firstTo':'first to {n} pts','lobby.firstToShort':'first to {n}',
+    'lobby.maxPlayers':'max {n} players','lobby.private':'🔒 private',
+    'lobby.ready':'🎮 ready','lobby.loading':'⏳ loading ROM…',
+    'lobby.allReady':'🚀 Everyone is ready!','lobby.waitAll':'Waiting for everyone to load their ROM and walk a bit…',
+    'lobby.waitHost':'⏳ Waiting for {host} to start…','lobby.theHost':'the host',
+    'set.title2':'⚙️ Settings','set.pad':'On-screen touch controller (phone)','set.keys':'Keyboard keys (computer)',
+    'set.keysHint':'Click a key, then press the new keyboard key.','set.reset':'↺ Default','set.close':'Close',
+    'room.join':'Join','room.live':'● in game','room.passPrompt':'🔒 Password for room « {room} »:',
+    'err.cantJoin':'Could not connect','err.enterNick':'Enter your nickname','err.roomName':'Give the room a name','err.nickFirst':'Enter your nickname up top first ☝️',
+    'pres.off':'offline','pres.in':'in game','pres.idle':'connected, not in game',
+    'vote.pass':'🙋 Vote to skip ({got}/{need})','vote.passWait':'✅ Waiting ({got}/{need})',
+    'vote.zoom':'🔍 Next zoom ({got}/{need})','vote.zoomWait':'✅ Zoom ({got}/{need})','vote.zoomMax':'🔍 Max zoom',
+    'clutch.mine':'✅ Found <b>+{pts}</b> — waiting for others… <b>{t}</b>','clutch.other':'🎉 <b>{name}</b> found it! Hurry — <b>{t}</b>',
+    'cd.zoomMax':'max zoom','cd.zoomout':'zoom-out {t}',
+    'over.winner':'<b>{winner}</b> wins!','over.newGame':'New game in {sec}s…',
+    'won.clutchExtra':' · +{n} on clutch','won.head':'🏁 {winner} +{pts}{extra}','won.nobody':'🏁 nobody found it','reveal.target':'target',
+    'diff.facile':'Easy','diff.moyen':'Medium','diff.difficile':'Hard','region.all':'Johto + Kanto',
+    'btn.up':'Up ▲','btn.down':'Down ▼','btn.left':'Left ◀','btn.right':'Right ▶','btn.x':'X (menu)',
+  }
+};
+let LANG = localStorage.getItem('pg_lang') || ((navigator.language||'').toLowerCase().startsWith('en') ? 'en' : 'fr');
+function L(key, vars){ let s = (I18N[LANG] && I18N[LANG][key]) ?? I18N.fr[key] ?? key; if(vars) for(const k in vars) s = s.split('{'+k+'}').join(vars[k]); return s; }
+function applyStaticI18n(){
+  document.documentElement.lang = LANG;
+  for(const el of document.querySelectorAll('[data-i18n]')) el.textContent = L(el.dataset.i18n);
+  for(const el of document.querySelectorAll('[data-i18n-ph]')) el.setAttribute('placeholder', L(el.dataset.i18nPh));
+  for(const el of document.querySelectorAll('[data-i18n-title]')) el.setAttribute('title', L(el.dataset.i18nTitle));
+}
+function setLang(l){ LANG = (l==='en')?'en':'fr'; localStorage.setItem('pg_lang', LANG); applyStaticI18n();
+  const ml=$('m-lang'), sl=$('set-lang'); if(ml)ml.value=LANG; if(sl)sl.value=LANG;
+  try{ if(typeof buildKeybindRows==='function' && !$('settings').hidden) buildKeybindRows(); }catch{}
+  if(state) apply(state); }
+
 const socket = io();
 let myName = '', room = 'main', filter = { region:'all', type:'all', difficulty:'moyen' };
 let state = null, cd = null, myVoted = false, myZoomVoted = false, joined = false;
@@ -358,33 +454,33 @@ let cdSecs = 0, cdKey = ''; // décompte local propre à la manche (compteur ser
   if (qp.get('name')) $('m-name').value = qp.get('name');
   if (qp.get('room')) $('m-room').value = qp.get('room');
 })();
-const DIFF = { facile:'Facile', moyen:'Moyen', difficile:'Difficile' };
-const regionLabel = (r) => ({ all:'Johto + Kanto', johto:'Johto', kanto:'Kanto' }[r] || r);
-const typeLabel = (t) => ({ all:'Tous lieux', ext:'Extérieurs', int:'Intérieurs' }[t] || t);
+const diffL = (d) => L('diff.'+d);
+const regionLabel = (r) => (r==='all' ? L('region.all') : (r==='johto'?'Johto':(r==='kanto'?'Kanto':r)));
+const typeLabel = (x) => (x==='all' ? L('type.all') : (x==='ext'?L('type.ext'):(x==='int'?L('type.int'):x)));
 
 function onEntered(res){
   if (res && res.ok){ joined = true; $('menu').hidden = true; $('game').hidden = false; apply(res.state); updatePad(); }
-  else alert(res && res.error ? res.error : 'Connexion impossible');
+  else alert(res && res.error ? res.error : L('err.cantJoin'));
 }
 $('m-create').onclick = () => {
   const name = $('m-name').value.trim(); const rm = $('m-room').value.trim();
-  if (!name) return alert('Entre ton pseudo'); if (!rm) return alert('Donne un nom au salon');
+  if (!name) return alert(L('err.enterNick')); if (!rm) return alert(L('err.roomName'));
   myName = name; room = rm.toLowerCase();
   filter = { region: $('m-region').value, type: $('m-type').value, difficulty: $('m-diff').value };
   socket.emit('room:create', { name: myName, room: rm, filter, maxPlayers: +$('m-max').value, password: $('m-pass').value.trim() }, onEntered);
 };
 function joinRoom(key, locked){
   const name = $('m-name').value.trim();
-  if (!name) return alert('Entre d\'abord ton pseudo en haut ☝️');
+  if (!name) return alert(L('err.nickFirst'));
   let password = '';
-  if (locked){ password = prompt('🔒 Mot de passe du salon « ' + key + ' » :'); if (password === null) return; }
+  if (locked){ password = prompt(L('room.passPrompt',{room:key})); if (password === null) return; }
   myName = name; room = key;
   socket.emit('room:join', { name: myName, room: key, password }, onEntered);
 }
 // Liste des salons ouverts, mise à jour en direct.
 socket.on('rooms', (list) => {
   const box = $('room-list'); if (!box) return;
-  if (!list || !list.length){ box.innerHTML = '<p class="m-empty">Aucun salon pour l\'instant — crées-en un ! 👇</p>'; return; }
+  if (!list || !list.length){ box.innerHTML = '<p class="m-empty">'+esc(L('menu.noRooms'))+'</p>'; return; }
   box.innerHTML = '';
   for (const r of list){
     const live = r.phase !== 'lobby';
@@ -396,10 +492,10 @@ socket.on('rooms', (list) => {
       + `<div class="rr-info">`
       +   `<span class="rr-badge">👥 ${count}</span>`
       +   `<span class="rr-badge">👑 ${esc(r.host || '?')}</span>`
-      +   `<span class="rr-badge">${DIFF[r.difficulty] || r.difficulty}</span>`
-      +   (live ? `<span class="rr-badge live">● en partie</span>` : '')
+      +   `<span class="rr-badge">${esc(diffL(r.difficulty))}</span>`
+      +   (live ? `<span class="rr-badge live">${esc(L('room.live'))}</span>` : '')
       + `</div></div>`;
-    const b = document.createElement('button'); b.className = 'rr-join'; b.textContent = 'Rejoindre';
+    const b = document.createElement('button'); b.className = 'rr-join'; b.textContent = L('room.join');
     b.onclick = () => joinRoom(r.room, r.locked); row.appendChild(b);
     box.appendChild(row);
   }
@@ -419,16 +515,16 @@ document.addEventListener('click', ()=>{ try{ac();}catch{} }, { once:true });
 // ---------- UI JEU ----------
 function renderLobby(s){
   $('lobby-room').textContent = s.room || room;
-  const bits = [DIFF[s.difficulty]||s.difficulty, `premier à ${s.winScore} pts`, regionLabel(s.region), typeLabel(s.type)];
-  if (s.maxPlayers) bits.push(`max ${s.maxPlayers} joueurs`);
-  if (s.hasPassword) bits.push('🔒 privé');
+  const bits = [diffL(s.difficulty), L('lobby.firstTo',{n:s.winScore}), regionLabel(s.region), typeLabel(s.type)];
+  if (s.maxPlayers) bits.push(L('lobby.maxPlayers',{n:s.maxPlayers}));
+  if (s.hasPassword) bits.push(L('lobby.private'));
   $('lobby-cfg').textContent = bits.join(' · ');
   const box = $('lobby-players'); box.innerHTML = '';
   for (const p of (s.players||[]).filter(p=>!p.offline)){
     const ready = p.inGame; const el = document.createElement('div');
     el.className = 'lp ' + (ready ? 'ready' : 'wait');
     const crown = (s.host && p.name.toLowerCase() === s.host.toLowerCase()) ? '👑 ' : '';
-    el.innerHTML = `<span>${crown}${esc(p.name)}</span><span class="lp-status">${ready ? '🎮 prêt' : '⏳ charge sa ROM…'}</span>`;
+    el.innerHTML = `<span>${crown}${esc(p.name)}</span><span class="lp-status">${ready ? L('lobby.ready') : L('lobby.loading')}</span>`;
     box.appendChild(el);
   }
   const isHost = s.host && myName && s.host.toLowerCase() === myName.toLowerCase();
@@ -436,9 +532,9 @@ function renderLobby(s){
   $('lobby-wait').hidden = !!isHost;
   if (isHost){
     $('start-btn').disabled = !s.canStart;
-    $('start-hint').textContent = s.canStart ? '🚀 Tout le monde est prêt !' : 'En attente que tout le monde charge sa ROM et se balade un peu…';
+    $('start-hint').textContent = s.canStart ? L('lobby.allReady') : L('lobby.waitAll');
   } else {
-    $('lobby-wait').textContent = `⏳ En attente que ${s.host || 'le meneur'} lance la partie…`;
+    $('lobby-wait').textContent = L('lobby.waitHost',{host: s.host || L('lobby.theHost')});
   }
 }
 function apply(s){
@@ -454,16 +550,15 @@ function apply(s){
   $('scores-v').innerHTML = (s.players||[]).map(p=>{
     const cls = p.offline ? 'pl-off' : (p.inGame ? 'pl-in' : 'pl-idle');
     const tag = p.offline ? '💤' : (p.inGame ? '🎮' : '⏳');
-    const ttl = p.offline ? 'déconnecté' : (p.inGame ? 'en jeu' : 'connecté, pas en jeu');
+    const ttl = p.offline ? L('pres.off') : (p.inGame ? L('pres.in') : L('pres.idle'));
     return `<span class="${cls}" title="${ttl}">${tag} ${esc(p.name)} <b>${p.score}</b></span>`;
   }).join(' · ') || '–';
-  const diffLabel = { facile:'Facile', moyen:'Moyen', difficile:'Difficile' }[s.difficulty] || '';
-  const parts = [s.winScore?`premier à ${s.winScore}`:'', diffLabel].filter(Boolean);
+  const parts = [s.winScore?L('lobby.firstToShort',{n:s.winScore}):'', s.difficulty?diffL(s.difficulty):''].filter(Boolean);
   $('goal').textContent = parts.length ? `(${parts.join(' · ')})` : '';
   const need = s.passNeeded ?? 0, got = s.passVotes ?? 0;
-  const pv = $('passvote'); pv.textContent = myVoted ? `✅ En attente (${got}/${need})` : `🙋 Demander à passer (${got}/${need})`; pv.disabled = myVoted || s.phase!=='playing' || s.clutchActive;
+  const pv = $('passvote'); pv.textContent = myVoted ? L('vote.passWait',{got,need}) : L('vote.pass',{got,need}); pv.disabled = myVoted || s.phase!=='playing' || s.clutchActive;
   const zgot = s.zoomVotes ?? 0; const zv = $('zoomvote');
-  zv.textContent = s.atMaxZoom ? '🔍 Zoom max' : (myZoomVoted ? `✅ Zoom (${zgot}/${need})` : `🔍 Zoom suivant (${zgot}/${need})`);
+  zv.textContent = s.atMaxZoom ? L('vote.zoomMax') : (myZoomVoted ? L('vote.zoomWait',{got:zgot,need}) : L('vote.zoom',{got:zgot,need}));
   zv.disabled = s.atMaxZoom || myZoomVoted || s.phase!=='playing' || s.clutchActive;
   hints(s); img(); countdown(); updateClutch(s);
 }
@@ -479,8 +574,8 @@ function updateClutch(s){
   const render = ()=>{
     const t = `0:${String(clutchSecs).padStart(2,'0')}`;
     bar.innerHTML = mine
-      ? `✅ Trouvé <b>+${mine.pts}</b> — en attente des autres… <b>${t}</b>`
-      : `🎉 <b>${esc(first?first.name:'')}</b> a trouvé ! Rejoins-le vite — <b>${t}</b>`;
+      ? L('clutch.mine',{pts:mine.pts, t})
+      : L('clutch.other',{name:esc(first?first.name:''), t});
     bar.hidden = false;
   };
   render();
@@ -521,10 +616,10 @@ function img(){ $('photo').src = `/img/${room}?t=${Date.now()}`; }
 function countdown(){
   const el=$('countdown');
   const left = state && state.zoomInSec;
-  if(left===null || left===undefined){ clearInterval(cd); cd=null; cdKey=''; el.textContent='zoom max'; return; }
+  if(left===null || left===undefined){ clearInterval(cd); cd=null; cdKey=''; el.textContent=L('cd.zoomMax'); return; }
   const key = state.round+':'+state.level;
   if(key!==cdKey || Math.abs(left-cdSecs)>1){ cdKey=key; cdSecs=Math.max(0,left); }
-  const render=()=>{ el.textContent=`dézoom ${Math.floor(cdSecs/60)}:${String(cdSecs%60).padStart(2,'0')}`; };
+  const render=()=>{ el.textContent=L('cd.zoomout',{t:`${Math.floor(cdSecs/60)}:${String(cdSecs%60).padStart(2,'0')}`}); };
   render();
   if(!cd) cd=setInterval(()=>{ if(cdSecs>0)cdSecs--; render(); }, 1000);
 }
@@ -542,11 +637,11 @@ let podiumCd = null;
 const esc = (t)=>String(t).replace(/[&<>]/g,(c)=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 socket.on('game:over', (d)=>{
   SND.gameover(); const p=$('podium');
-  p.querySelector('.podium-title').innerHTML=`Victoire de <b>${esc(d.winner)}</b> !`;
+  p.querySelector('.podium-title').innerHTML=L('over.winner',{winner:esc(d.winner)});
   const medals=['🥇','🥈','🥉'];
   p.querySelector('.podium-list').innerHTML=(d.standings||[]).map((s,i)=>`<li class="${i===0?'p1':''}"><span>${medals[i]||(i+1)+'.'} ${esc(s.name)}</span><b>${s.score}</b></li>`).join('');
   const sub=p.querySelector('.podium-sub'); let sec=d.seconds||12; clearInterval(podiumCd);
-  const tick=()=>{ sub.textContent=`Nouvelle partie dans ${Math.max(0,sec)}s…`; if(sec-- <=0)clearInterval(podiumCd); };
+  const tick=()=>{ sub.textContent=L('over.newGame',{sec:Math.max(0,sec)}); if(sec-- <=0)clearInterval(podiumCd); };
   tick(); podiumCd=setInterval(tick,1000); p.hidden=false;
 });
 socket.on('round:zoom', (s)=>{ const t=myTier(s); if(t&&SND[t])SND[t](); else SND.zoom(); myZoomVoted=false; apply(s); });
@@ -554,8 +649,8 @@ socket.on('round:won', (d)=>{
   clearInterval(clutchTick); clutchTick=null; $('clutchbar').hidden=true; // fin de la fenêtre clutch
   apply(d); SND.win();
   const b=$('banner'); const found=d.found||[];
-  const extra = found.length>1 ? ` · +${found.length-1} au clutch` : '';
-  const head = found.length ? `🏁 ${esc(d.winner)} +${found[0].pts}${extra}` : '🏁 personne n\'a trouvé';
+  const extra = found.length>1 ? L('won.clutchExtra',{n:found.length-1}) : '';
+  const head = found.length ? L('won.head',{winner:esc(d.winner), pts:found[0].pts, extra}) : L('won.nobody');
   b.innerHTML = head; b.hidden=false;
   drawReveal(d.reveal);
 });
@@ -578,7 +673,7 @@ function drawReveal(reveal){
     ctx.strokeStyle='#ff4d4d'; ctx.lineWidth=2.5; ctx.beginPath(); ctx.arc(tx,ty,9,0,7); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(tx-13,ty); ctx.lineTo(tx+13,ty); ctx.moveTo(tx,ty-13); ctx.lineTo(tx,ty+13); ctx.stroke();
     ctx.lineWidth=3; ctx.strokeStyle='rgba(0,0,0,.7)'; ctx.font='bold 12px system-ui'; ctx.textAlign='center';
-    const label=(reveal.interior?'🚪 ':'')+(reveal.zone||'cible');
+    const label=(reveal.interior?'🚪 ':'')+(reveal.zone||L('reveal.target'));
     ctx.strokeText(label,tx,ty+23); ctx.fillStyle='#ffdada'; ctx.fillText(label,tx,ty+23);
     for(const pl of reveal.players){ const [px,py]=P(pl.gx,pl.gy); ctx.fillStyle=pl.won?'#ffd54a':'#4c9ef0'; ctx.beginPath(); ctx.arc(px,py,pl.won?6:5,0,7); ctx.fill(); ctx.strokeStyle='#0b0e14'; ctx.lineWidth=1.5; ctx.stroke(); ctx.lineWidth=3; ctx.strokeStyle='rgba(0,0,0,.7)'; ctx.font='bold 11px system-ui'; ctx.textAlign='center'; ctx.strokeText(pl.name,px,py-9); ctx.fillStyle='#fff'; ctx.fillText(pl.name,px,py-9); }
   };
@@ -655,10 +750,10 @@ function startPolling(){
       } else candidates=scanCandidates(H);
     }
     if(ramBase===null||!validBase(H,ramBase)){ ramBase=null; for(const c of candidates) if(validBase(H,c)){ ramBase=c; break; } }
-    if(ramBase===null){ $('emustat').textContent='⏳ En jeu ? Fais Continuer et marche…'; return; }
+    if(ramBase===null){ $('emustat').textContent=L('emu.inGame'); return; }
     const p=readPos(H,ramBase);
     if(p.X===undefined)return;
-    $('emustat').textContent=`✅ Ta position : map ${p.mapID ?? '?'} — (${p.X}, ${p.Y})`;
+    $('emustat').textContent=L('emu.pos',{map:p.mapID ?? '?', x:p.X, y:p.Y});
     const key=(p.mapID??0)+','+p.X+','+p.Y;
     if(joined && key!==lastPosKey){ lastPosKey=key; socket.emit('pos',{ mapID:p.mapID??0, x:p.X, y:p.Y }); }
   }, 200);
@@ -667,7 +762,7 @@ let romData=null;
 $('rom').addEventListener('change', async (ev)=>{
   const f=ev.target.files[0]; if(!f)return;
   romData=new Uint8Array(await f.arrayBuffer()); $('rom').disabled=true;
-  $('emustat').textContent='⏳ Chargement de l\'émulateur…';
+  $('emustat').textContent=L('emu.loading');
   try{ await loadScript('/dsa/wasmemulator.js'); await loadScript('/dsa/webmelon.js'); WebMelon.assembly.addLoadListener(boot); }
   catch(e){ $('emustat').textContent='⚠️ '+e.message; }
 });
@@ -683,7 +778,7 @@ function boot(){
       WebMelon.emulator.loadFreeBIOS(); WebMelon.emulator.loadCart();
       WebMelon.emulator.startEmulation('top-screen','bottom-screen');
       setInterval(WebMelon.storage.sync, 20000);
-      $('emustat').textContent='✅ Émulateur lancé — fais Continuer dans le jeu';
+      $('emustat').textContent=L('emu.launched');
       applyKeybinds(); updatePad();   // touches perso + affiche la manette tactile
       startPolling();
     }catch(e){ $('emustat').textContent='⚠️ boot: '+e.message; }
@@ -697,7 +792,8 @@ function boot(){
 // les bits sur appui/relâche. La boucle manette de WebMelon s'arrête tôt s'il
 // n'y a pas de gamepad, donc l'input tactile n'est pas écrasé.
 const DSBTN = { A:1<<0, B:1<<1, SELECT:1<<2, START:1<<3, DPAD_RIGHT:1<<4, DPAD_LEFT:1<<5, DPAD_UP:1<<6, DPAD_DOWN:1<<7, R:1<<8, L:1<<9, X:1<<10, Y:1<<11 };
-const BTN_LABEL = { DPAD_UP:'Haut ▲', DPAD_DOWN:'Bas ▼', DPAD_LEFT:'Gauche ◀', DPAD_RIGHT:'Droite ▶', A:'A', B:'B', X:'X (menu)', Y:'Y', START:'START', SELECT:'SELECT', L:'L', R:'R' };
+const BTN_LABEL = { A:'A', B:'B', Y:'Y', START:'START', SELECT:'SELECT', L:'L', R:'R' };
+const btnLabel = (b)=> ({DPAD_UP:L('btn.up'),DPAD_DOWN:L('btn.down'),DPAD_LEFT:L('btn.left'),DPAD_RIGHT:L('btn.right'),X:L('btn.x')}[b]) || BTN_LABEL[b] || b;
 const DEFAULT_KEYS = { DPAD_UP:'w', DPAD_LEFT:'a', DPAD_DOWN:'s', DPAD_RIGHT:'d', L:'q', R:'o', X:'i', A:'l', B:'k', Y:'j', SELECT:'v', START:'b' };
 let keyMap = { ...DEFAULT_KEYS };
 try { const s = JSON.parse(localStorage.getItem('pg_keymap') || 'null'); if (s) keyMap = { ...DEFAULT_KEYS, ...s }; } catch {}
@@ -734,7 +830,7 @@ function buildKeybindRows(){
   for(const btn of ['DPAD_UP','DPAD_DOWN','DPAD_LEFT','DPAD_RIGHT','A','B','X','Y','START','SELECT','L','R']){
     const key = keyMap[btn] || '—';
     const row = document.createElement('div'); row.className='kb-row';
-    row.innerHTML = `<span>${BTN_LABEL[btn]}</span><button class="kb-key" data-btn="${btn}">${esc(key===' '?'␣ espace':key)}</button>`;
+    row.innerHTML = `<span>${btnLabel(btn)}</span><button class="kb-key" data-btn="${btn}">${esc(key===' '?(LANG==='en'?'␣ space':'␣ espace'):key)}</button>`;
     box.appendChild(row);
   }
 }
@@ -758,6 +854,12 @@ $('settings-btn').onclick = ()=>{ buildKeybindRows(); updatePad(); $('settings')
 $('set-close').onclick = ()=>{ $('settings').hidden=true; };
 $('set-pad').onchange = (e)=>{ padOn=e.target.checked; localStorage.setItem('pg_pad', padOn?'1':'0'); updatePad(); };
 $('set-reset').onclick = ()=>{ keyMap={...DEFAULT_KEYS}; localStorage.setItem('pg_keymap', JSON.stringify(keyMap)); applyKeybinds(); buildKeybindRows(); };
+// Langue : sélecteurs (menu + réglages) + application initiale.
+if($('m-lang')) $('m-lang').onchange = (e)=> setLang(e.target.value);
+if($('set-lang')) $('set-lang').onchange = (e)=> setLang(e.target.value);
+if($('m-lang')) $('m-lang').value = LANG;
+if($('set-lang')) $('set-lang').value = LANG;
+applyStaticI18n();
 updatePad();
 </script>
 </body>
