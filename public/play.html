@@ -13,6 +13,9 @@
   #head { display:flex; justify-content:space-between; align-items:center; padding:10px 14px; }
   #head h1 { font-size:16px; margin:0; }
   #mute, #settings-btn { background:none; border:none; cursor:pointer; font-size:15px; }
+  .flagbtn { background:none; border:none; cursor:pointer; padding:0; display:flex; align-items:center; line-height:0; }
+  .flagbtn svg { display:block; width:28px; height:auto; image-rendering:pixelated; border:2px solid var(--line); box-shadow:2px 2px 0 rgba(0,0,0,.25); }
+  .flagbtn:active svg { transform:translate(1px,1px); box-shadow:1px 1px 0 rgba(0,0,0,.25); }
   #head .head-btns { display:flex; gap:8px; }
   /* menu */
   #menu { max-width:420px; margin:6vh auto; padding:18px; }
@@ -242,15 +245,13 @@
   <div class="track"><img src="/img/landscape.png" alt=""><img src="/img/landscape.png" alt=""></div>
   <span class="pcloud c1"></span><span class="pcloud c2"></span><span class="pcloud c3"></span>
 </div>
-<div id="head"><h1><img class="brand" src="/img/logo.png" alt=""> PokéGeoGuessr</h1><div class="head-btns"><button id="settings-btn" data-i18n-title="set.title" title="Réglages (contrôles)">⚙️</button><button id="mute" data-i18n-title="sound.title" title="Sons">🔊</button></div></div>
+<div id="head"><h1><img class="brand" src="/img/logo.png" alt=""> PokéGeoGuessr</h1><div class="head-btns"><button id="lang-btn" class="flagbtn" title="Language / Langue"></button><button id="settings-btn" data-i18n-title="set.title" title="Réglages (contrôles)">⚙️</button><button id="mute" data-i18n-title="sound.title" title="Sons">🔊</button></div></div>
 
 <!-- MENU -->
 <div id="menu" class="card">
   <p class="sub" data-i18n="menu.tagline" style="font-family:var(--disp);font-size:15px;color:var(--line2);margin-top:2px">Un GeoGuessr dans Pokémon SoulSilver</p>
-  <div class="row">
-    <div style="flex:2"><label data-i18n="menu.nick">Ton pseudo</label><input id="m-name" maxlength="20" data-i18n-ph="menu.nickPh" placeholder="Ex : Léo"></div>
-    <div style="flex:1"><label data-i18n="menu.lang">Langue</label><select id="m-lang"><option value="fr">Français</option><option value="en">English</option></select></div>
-  </div>
+  <label data-i18n="menu.nick">Ton pseudo</label>
+  <input id="m-name" maxlength="20" data-i18n-ph="menu.nickPh" placeholder="Ex : Léo">
 
   <div class="m-sec" data-i18n="menu.rooms">🏠 Salons ouverts</div>
   <div id="room-list"><p class="m-empty" data-i18n="menu.noRooms">Aucun salon pour l'instant — crées-en un ! 👇</p></div>
@@ -335,7 +336,6 @@
 <div id="settings" hidden>
   <div class="set-card">
     <h2 data-i18n="set.title2">⚙️ Réglages</h2>
-    <div class="set-row"><label data-i18n="menu.lang" for="set-lang">Langue</label> <select id="set-lang"><option value="fr">Français</option><option value="en">English</option></select></div>
     <div class="set-row"><label><input type="checkbox" id="set-pad"> <span data-i18n="set.pad">Manette tactile à l'écran (téléphone)</span></label></div>
     <h3 data-i18n="set.keys">Touches clavier (ordinateur)</h3>
     <p class="kb-hint" data-i18n="set.keysHint">Clique sur une touche puis appuie sur la nouvelle touche du clavier.</p>
@@ -438,8 +438,14 @@ function applyStaticI18n(){
   for(const el of document.querySelectorAll('[data-i18n-ph]')) el.setAttribute('placeholder', L(el.dataset.i18nPh));
   for(const el of document.querySelectorAll('[data-i18n-title]')) el.setAttribute('title', L(el.dataset.i18nTitle));
 }
-function setLang(l){ LANG = (l==='en')?'en':'fr'; localStorage.setItem('pg_lang', LANG); applyStaticI18n();
-  const ml=$('m-lang'), sl=$('set-lang'); if(ml)ml.value=LANG; if(sl)sl.value=LANG;
+// Petits drapeaux pixel (SVG pixelisé, bordure façon rétro). Le bouton montre la
+// langue ACTIVE ; cliquer bascule vers l'autre.
+const FLAG = {
+  fr: '<svg viewBox="0 0 24 16" width="24" height="16"><rect width="8" height="16" fill="#2a3fb8"/><rect x="8" width="8" height="16" fill="#f4f4ec"/><rect x="16" width="8" height="16" fill="#e01b24"/></svg>',
+  en: '<svg viewBox="0 0 24 16" width="24" height="16"><rect width="24" height="16" fill="#1e3fae"/><path d="M0,0 L24,16 M24,0 L0,16" stroke="#f4f4ec" stroke-width="4"/><path d="M0,0 L24,16 M24,0 L0,16" stroke="#e01b24" stroke-width="1.7"/><rect x="9" width="6" height="16" fill="#f4f4ec"/><rect y="5" width="24" height="6" fill="#f4f4ec"/><rect x="10.5" width="3" height="16" fill="#e01b24"/><rect y="6.5" width="24" height="3" fill="#e01b24"/></svg>'
+};
+function renderFlag(){ const b=$('lang-btn'); if(b){ b.innerHTML = FLAG[LANG] || FLAG.fr; b.title = (LANG==='fr'?'Switch to English':'Passer en français'); } }
+function setLang(l){ LANG = (l==='en')?'en':'fr'; localStorage.setItem('pg_lang', LANG); applyStaticI18n(); renderFlag();
   try{ if(typeof buildKeybindRows==='function' && !$('settings').hidden) buildKeybindRows(); }catch{}
   if(state) apply(state); }
 
@@ -854,12 +860,9 @@ $('settings-btn').onclick = ()=>{ buildKeybindRows(); updatePad(); $('settings')
 $('set-close').onclick = ()=>{ $('settings').hidden=true; };
 $('set-pad').onchange = (e)=>{ padOn=e.target.checked; localStorage.setItem('pg_pad', padOn?'1':'0'); updatePad(); };
 $('set-reset').onclick = ()=>{ keyMap={...DEFAULT_KEYS}; localStorage.setItem('pg_keymap', JSON.stringify(keyMap)); applyKeybinds(); buildKeybindRows(); };
-// Langue : sélecteurs (menu + réglages) + application initiale.
-if($('m-lang')) $('m-lang').onchange = (e)=> setLang(e.target.value);
-if($('set-lang')) $('set-lang').onchange = (e)=> setLang(e.target.value);
-if($('m-lang')) $('m-lang').value = LANG;
-if($('set-lang')) $('set-lang').value = LANG;
-applyStaticI18n();
+// Langue : drapeau pixel en haut à droite (bascule FR <-> EN) + application initiale.
+if($('lang-btn')) $('lang-btn').onclick = ()=> setLang(LANG==='fr'?'en':'fr');
+applyStaticI18n(); renderFlag();
 updatePad();
 </script>
 </body>
