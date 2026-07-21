@@ -452,6 +452,7 @@ function setLang(l){ LANG = (l==='en')?'en':'fr'; localStorage.setItem('pg_lang'
 const socket = io();
 let myName = '', room = 'main', filter = { region:'all', type:'all', difficulty:'moyen' };
 let state = null, cd = null, myVoted = false, myZoomVoted = false, joined = false;
+let lastHintKey = ''; // jauge chaud/froid : clé du dézoom courant (ne rafraîchit qu'au changement)
 let cdSecs = 0, cdKey = ''; // décompte local propre à la manche (compteur serveur)
 
 // ---------- MENU / JOIN ----------
@@ -566,7 +567,13 @@ function apply(s){
   const zgot = s.zoomVotes ?? 0; const zv = $('zoomvote');
   zv.textContent = s.atMaxZoom ? L('vote.zoomMax') : (myZoomVoted ? L('vote.zoomWait',{got:zgot,need}) : L('vote.zoom',{got:zgot,need}));
   zv.disabled = s.atMaxZoom || myZoomVoted || s.phase!=='playing' || s.clutchActive;
-  hints(s); img(); countdown(); updateClutch(s);
+  // Jauge chaud/froid : en Facile = live ; sinon (Moyen) elle ne se rafraîchit
+  // QU'AU changement de dézoom (nouveau round/niveau), pas sur un vote partiel
+  // ni sur les mises à jour de présence. La clé ne change que quand le zoom
+  // passe pour tout le monde.
+  const hk = s.phase==='playing' ? (s.round+':'+s.level) : ('x:'+s.phase);
+  if (s.difficulty==='facile' || hk!==lastHintKey){ lastHintKey=hk; hints(s); }
+  img(); countdown(); updateClutch(s);
 }
 // Bannière de la fenêtre « clutch » : quelqu'un a trouvé, les autres ont un court
 // délai pour arriver aussi. Compteur local (resync sur clutchInSec, sans horloge).
