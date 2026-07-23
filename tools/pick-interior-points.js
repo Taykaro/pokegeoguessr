@@ -94,18 +94,21 @@ function minDoorDist(p){ return Math.min(...doorPts.map(d => d2(p,d)), Infinity)
 // sélection : max-min distance entre eux ET loin des portes.
 // on démarre par la tuile la plus éloignée de toute porte.
 const picked = [];
+const pickedSet = new Set();
 let start = walk[0], best = -1;
 for (const p of walk) { const d = minDoorDist(p); if (d > best) { best = d; start = p; } }
-picked.push(start);
+picked.push(start); pickedSet.add(key(start[0], start[1]));
 while (picked.length < N && picked.length < walk.length) {
   let cand = null, cbest = -1;
   for (const p of walk) {
+    if (pickedSet.has(key(p[0], p[1]))) continue; // jamais deux fois le même point
     const spread = Math.min(...picked.map(q => d2(p,q)));
     const doorFar = minDoorDist(p);
-    const score = spread + doorFar * 0.5; // écarté des autres + loin des portes
+    const score = spread + doorFar * 0.2; // surtout écartés entre eux ; léger biais anti-porte (pas besoin d'être LOIN, juste pas tous à la porte)
     if (score > cbest) { cbest = score; cand = p; }
   }
-  picked.push(cand);
+  if (!cand) break;
+  picked.push(cand); pickedSet.add(key(cand[0], cand[1]));
 }
 console.log('points choisis (x,y locaux ; dist min. porte en tuiles) :');
 for (const p of picked) console.log(`  ${p[0]},${p[1]}   (${Math.round(Math.sqrt(minDoorDist(p)))} de la porte la plus proche)`);

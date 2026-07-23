@@ -41,3 +41,6 @@ dist.zip
 
 # Le serveur multi a besoin de : server/, public/, gamepacks/hgss_photos/,
 # config.json, package.json (les photos du jeu y sont).
+
+# Script ops one-off (setup serveur Discord via discli) — local, hors serveur de jeu
+discord-setup.sh
