@@ -3,6 +3,11 @@
 > Document de passation pour une nouvelle session Claude (VS Code / Linux).
 > Il remplace la « mémoire » locale de la machine Windows (qui ne suit pas le
 > changement d'OS). Lis-le en entier avant d'agir.
+>
+> **Portage vers un autre jeu (Platine, Noir/Blanc…) : voir
+> [`docs/PORTAGE-NOUVEAU-JEU.md`](docs/PORTAGE-NOUVEAU-JEU.md)** — méthode
+> réutilisable + valeurs déjà trouvées. Scripts de calibration RAM (position/mapID)
+> prêts à coller dans la console : [`tools/calibrate/`](tools/calibrate/).
 
 ## 1. Concept
 
