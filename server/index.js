@@ -50,6 +50,13 @@ function sanitizeRoomOpts(o) {
   const password = String(o.password || '').trim().slice(0, 24);
   return { maxPlayers, password };
 }
+// Filtre de modération minimal : bloque les pseudos / noms de salon contenant
+// des insultes haineuses évidentes (accents/espaces ignorés). Volontairement
+// court et conservateur pour éviter les faux positifs.
+const BANNED = ['nigg', 'negro', 'faggot', 'fagot', 'kike', 'chink', 'nazi', 'hitler', 'pedophil', 'encule', 'salope'];
+function normName(s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]/g, ''); }
+function isBadName(s) { const n = normName(s); return BANNED.some((b) => n.includes(b)); }
+
 // Crée une room et branche le hook qui rafraîchit la liste des salons.
 function makeRoom(key, filter, opts) {
   const r = new Room(io, key, pack, config, sanitizeFilter(filter), opts || {});
@@ -71,7 +78,7 @@ function roomList() {
   const out = [];
   for (const [key, r] of rooms) {
     const active = r.activePlayers();
-    if (active.length === 0) continue;
+    if (active.length === 0 || r.solo) continue; // salons solo = cachés de la liste
     out.push({
       room: key, host: r.host, players: active.length,
       ready: active.filter((p) => r.isInGame(p)).length,
@@ -105,13 +112,16 @@ io.on('connection', (socket) => {
   socket.on('rooms:get', (ack) => { if (ack) ack(roomList()); });
 
   // Créer une room (le créateur devient meneur ; réglages figés à la création).
-  socket.on('room:create', ({ name, room, filter, maxPlayers, password }, ack) => {
+  socket.on('room:create', ({ name, room, filter, maxPlayers, password, solo }, ack) => {
     name = String(name || '').trim().slice(0, 20);
     const key = String(room || '').trim().toLowerCase().slice(0, 20);
     if (!name) return ack && ack({ ok: false, error: 'Pseudo requis' });
     if (!key) return ack && ack({ ok: false, error: 'Nom de room requis' });
+    if (isBadName(name) || (!solo && isBadName(key))) return ack && ack({ ok: false, error: 'Nom non autorisé' });
     if (rooms.has(key)) return ack && ack({ ok: false, error: 'Cette room existe déjà — rejoins-la' });
-    const res = enter(makeRoom(key, filter, sanitizeRoomOpts({ maxPlayers, password })), name);
+    const r = makeRoom(key, filter, sanitizeRoomOpts({ maxPlayers, password }));
+    r.solo = !!solo;
+    const res = enter(r, name);
     stats.recordRoom();
     broadcastRooms();
     if (ack) ack(res);
@@ -122,6 +132,7 @@ io.on('connection', (socket) => {
     name = String(name || '').trim().slice(0, 20);
     const key = String(room || '').trim().toLowerCase();
     if (!name) return ack && ack({ ok: false, error: 'Pseudo requis' });
+    if (isBadName(name)) return ack && ack({ ok: false, error: 'Pseudo non autorisé' });
     if (!rooms.has(key)) return ack && ack({ ok: false, error: 'Room introuvable' });
     const r = rooms.get(key);
     if (r.password && String(password || '') !== r.password) return ack && ack({ ok: false, error: 'Mot de passe incorrect', locked: true });
@@ -234,6 +245,19 @@ app.get('/simmap', (req, res) => {
 app.get('/api/stats', (req, res) => {
   if (!process.env.STATS_KEY || req.query.key !== process.env.STATS_KEY) return res.status(403).end();
   res.json(stats.snapshot());
+});
+
+// Modération : fermer un salon à distance (ex. nom déplacé). Protégé par STATS_KEY.
+// GET /admin/close-room?key=...&room=NOM  (GET pour être cliquable depuis le navigateur)
+app.get('/admin/close-room', (req, res) => {
+  if (!process.env.STATS_KEY || req.query.key !== process.env.STATS_KEY) return res.status(403).end();
+  const key = String(req.query.room || '').trim().toLowerCase();
+  const r = rooms.get(key);
+  if (!r) return res.status(404).json({ ok: false, error: 'salon introuvable', rooms: [...rooms.keys()] });
+  clearInterval(r.presenceTimer); clearInterval(r.zoomClock); clearInterval(r.clutchClock); clearInterval(r.hintTimer);
+  rooms.delete(key);
+  broadcastRooms();
+  res.json({ ok: true, closed: key });
 });
 
 app.get('/api/pack', (req, res) => {

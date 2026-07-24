@@ -3,7 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>PokéGeoGuessr</title>
+<title>PokéGeoGuessr — un GeoGuessr dans Pokémon SoulSilver</title>
+<meta name="description" content="Un GeoGuessr multijoueur jouable directement dans Pokémon SoulSilver / HeartGold. Trouve le lieu montré et amène ton perso sur place — le 1er arrivé gagne.">
+<!-- Aperçu de lien (Discord / Twitter / Reddit) -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="PokéGeoGuessr — un GeoGuessr dans Pokémon">
+<meta property="og:description" content="Trouve le lieu montré et cours-y dans le jeu. Multijoueur, gratuit, dans Pokémon SoulSilver / HeartGold.">
+<meta property="og:image" content="https://pokegeoguessr.onrender.com/img/og.png">
+<meta property="og:url" content="https://pokegeoguessr.onrender.com/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="PokéGeoGuessr — un GeoGuessr dans Pokémon">
+<meta name="twitter:description" content="Trouve le lieu et cours-y dans le jeu. Multijoueur, gratuit.">
+<meta name="twitter:image" content="https://pokegeoguessr.onrender.com/img/og.png">
 <link rel="icon" type="image/png" href="/img/logo.png">
 <link rel="apple-touch-icon" href="/img/logo.png">
 <style>
@@ -239,6 +250,32 @@
   #start-btn{ width:100%; font-size:18px; }
   #start-hint, #lobby-wait{ text-align:center; margin:4px 0 0; }
 </style>
+<style>
+  /* Onboarding + actions rapides (lancement public) */
+  .howbox{ background:rgba(255,255,255,.4); border:2px solid var(--line); border-radius:10px; padding:8px 12px; margin:12px 0 2px; font-family:var(--disp); }
+  .howbox summary{ cursor:pointer; font-weight:700; color:var(--line); font-size:15px; list-style:none; }
+  .howbox summary::-webkit-details-marker{ display:none; }
+  .howbox summary::before{ content:'▸ '; } .howbox[open] summary::before{ content:'▾ '; }
+  .howbox .how-need{ font-size:12.5px; color:var(--ink); margin:8px 0 6px; }
+  .howbox ol.how-steps{ margin:0; padding-left:18px; font-size:12.5px; color:var(--ink); line-height:1.7; }
+  #menu .top-actions{ display:flex; gap:10px; margin-top:12px; }
+  #menu .top-actions button{ width:auto; flex:1; margin-top:0; font-family:var(--disp); font-weight:700; border-radius:12px; padding:11px; cursor:pointer; }
+  #menu #m-solo{ background:var(--green); color:#fff; border:none; box-shadow:0 3px 0 var(--greend); }
+  #menu #m-solo:active{ transform:translateY(2px); box-shadow:0 1px 0 var(--greend); }
+  #menu #m-demo{ background:var(--cream); color:var(--line); border:2px solid var(--line); box-shadow:0 3px 0 var(--line2); }
+  #menu #m-demo:active{ transform:translateY(2px); box-shadow:0 1px 0 var(--line2); }
+  #mobile-warn{ position:fixed; left:8px; right:8px; bottom:8px; z-index:60; background:var(--cream); color:var(--ink); border:3px solid var(--line); border-radius:12px; box-shadow:0 4px 0 var(--line2); padding:10px 38px 10px 12px; font-family:var(--disp); font-size:13px; text-align:center; }
+  #mobile-warn button{ position:absolute; right:6px; top:4px; background:none; border:none; font-size:18px; cursor:pointer; color:var(--line); }
+  .ovl{ position:fixed; inset:0; z-index:70; display:flex; align-items:center; justify-content:center; background:rgba(8,10,16,.8); backdrop-filter:blur(3px); padding:16px; }
+  .ovl-card{ background:var(--cream); color:var(--ink); border:3px solid var(--line); border-radius:14px; box-shadow:0 6px 0 var(--line2); max-width:460px; width:100%; padding:16px; font-family:var(--disp); }
+  .ovl-card h2{ margin:0 0 8px; color:var(--line); font-size:20px; }
+  .ovl-card .about-body{ white-space:pre-line; font-size:13px; line-height:1.6; }
+  .ovl-card .btns{ margin-top:14px; }
+  #demo-stage{ position:relative; width:100%; aspect-ratio:4/3; background:#000; border-radius:10px; overflow:hidden; border:2px solid var(--line); }
+  #demo-img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; image-rendering:pixelated; transform-origin:center; transition:transform 4.5s linear; }
+  #demo-cap{ position:absolute; left:0; right:0; bottom:0; text-align:center; font-family:var(--disp); font-size:15px; font-weight:700; padding:8px; background:rgba(251,244,225,.92); color:var(--ink); border-top:3px solid var(--line); }
+  .about-link{ background:none; border:none; color:var(--line2); text-decoration:underline; cursor:pointer; font:inherit; padding:0; }
+</style>
 </head>
 <body>
 <!-- décor pixel cosy Gen-4 qui défile (route de campagne) + nuages -->
@@ -251,8 +288,23 @@
 <!-- MENU -->
 <div id="menu" class="card">
   <p class="sub" data-i18n="menu.tagline" style="font-family:var(--disp);font-size:15px;color:var(--line2);margin-top:2px">Un GeoGuessr dans Pokémon SoulSilver</p>
+
+  <details id="howto" class="howbox" open>
+    <summary data-i18n="how.title">Comment ça marche</summary>
+    <p class="how-need" data-i18n="how.need">Il te faut ta propre cartouche Pokémon SoulSilver ou HeartGold (.nds).</p>
+    <ol class="how-steps">
+      <li data-i18n="how.s1">Charge ta ROM (elle reste sur ta machine).</li>
+      <li data-i18n="how.s2">Une photo d'un lieu s'affiche et se dézoome.</li>
+      <li data-i18n="how.s3">Amène ton perso sur ce lieu — le 1er arrivé gagne !</li>
+    </ol>
+  </details>
+
   <label data-i18n="menu.nick">Ton pseudo</label>
   <input id="m-name" maxlength="20" data-i18n-ph="menu.nickPh" placeholder="Ex : Léo">
+  <div class="top-actions">
+    <button id="m-solo" data-i18n="menu.solo">🎮 Jouer en solo</button>
+    <button id="m-demo" data-i18n="demo.btn">👁️ Voir une démo</button>
+  </div>
 
   <div class="m-sec" data-i18n="menu.rooms">🏠 Salons ouverts</div>
   <div id="room-list"><p class="m-empty" data-i18n="menu.noRooms">Aucun salon pour l'instant — crées-en un ! 👇</p></div>
@@ -348,7 +400,23 @@
   </div>
 </div>
 
-<footer id="site-foot" data-i18n="foot.disclaimer">Projet de fan non affilié à Nintendo, Game Freak ou The Pokémon Company. Aucune ROM n'est fournie ni distribuée — chaque joueur utilise la sienne.</footer>
+<!-- Bannière mobile (affichée par JS si petit écran tactile) -->
+<div id="mobile-warn" hidden><button id="mw-close" aria-label="Fermer">✕</button><span data-i18n="mobile.warn">Bien meilleur sur ordinateur.</span></div>
+
+<!-- Démo (sans ROM) : une photo qui se dézoome puis révèle le lieu, en boucle -->
+<div id="demo" class="ovl" hidden><div class="ovl-card">
+  <div id="demo-stage"><img id="demo-img" alt=""><div id="demo-cap"></div></div>
+  <div class="btns"><button id="demo-close" class="btn" data-i18n="demo.close">Fermer la démo</button></div>
+</div></div>
+
+<!-- À propos -->
+<div id="about" class="ovl" hidden><div class="ovl-card">
+  <h2 data-i18n="about.title">À propos de PokéGeoGuessr</h2>
+  <div class="about-body" data-i18n="about.body"></div>
+  <div class="btns"><button id="about-close" class="btn" data-i18n="set.close">Fermer</button></div>
+</div></div>
+
+<footer id="site-foot"><span data-i18n="foot.disclaimer">Projet de fan non affilié à Nintendo, Game Freak ou The Pokémon Company. Aucune ROM n'est fournie ni distribuée — chaque joueur utilise la sienne.</span> · <button id="about-link" class="about-link" data-i18n="about.link">À propos</button></footer>
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
@@ -369,6 +437,18 @@ const I18N = {
     'menu.createBtn':'Créer le salon','menu.lang':'Langue',
     'menu.hostNote':'Tu seras le meneur : tu lances la partie quand tout le monde a chargé sa ROM. Ta ROM SoulSilver (.nds) reste sur ta machine.',
     'foot.disclaimer':'Projet de fan non affilié à Nintendo, Game Freak ou The Pokémon Company. Aucune ROM n\'est fournie ni distribuée — chaque joueur utilise la sienne.',
+    'how.title':'Comment ça marche',
+    'how.need':'Il te faut ta propre cartouche Pokémon SoulSilver ou HeartGold (fichier .nds) — français ou anglais.',
+    'how.s1':'Charge ta ROM (elle reste sur ta machine, rien n\'est envoyé).',
+    'how.s2':'Une photo d\'un lieu s\'affiche et se dézoome peu à peu.',
+    'how.s3':'Amène ton perso sur ce lieu dans le jeu — le 1er arrivé gagne !',
+    'menu.solo':'🎮 Jouer en solo / s\'entraîner',
+    'demo.btn':'👁️ Voir une démo (sans ROM)',
+    'demo.where':'Où est-ce ?','demo.close':'Fermer la démo',
+    'mobile.warn':'💻 Bien meilleur sur ordinateur : charger une ROM (.nds) et faire tourner l\'émulateur est difficile sur téléphone.',
+    'emu.badRom':'⚠️ Version non reconnue. Utilise Pokémon SoulSilver ou HeartGold (français ou anglais).',
+    'about.link':'À propos','about.title':'À propos de PokéGeoGuessr',
+    'about.body':'Un GeoGuessr multijoueur jouable directement dans Pokémon SoulSilver / HeartGold : trouve le lieu montré et amène ton perso sur place, le premier arrivé gagne.\n\nProjet de fan créé par Taykaro, non affilié à Nintendo, Game Freak ou The Pokémon Company. Aucune ROM n\'est fournie ni distribuée — chaque joueur utilise la sienne. Émulation dans le navigateur via melonDS (WebMelon).',
     'emu.pickRom':'Choisis ta ROM SoulSilver (.nds) pour démarrer.',
     'emu.loading':'⏳ Chargement de l\'émulateur…','emu.launched':'✅ Émulateur lancé — fais Continuer dans le jeu',
     'emu.inGame':'⏳ En jeu ? Fais Continuer et marche…','emu.pos':'✅ Ta position : map {map} — ({x}, {y})',
@@ -408,6 +488,18 @@ const I18N = {
     'menu.createBtn':'Create room','menu.lang':'Language',
     'menu.hostNote':'You\'ll be the host: you start the game once everyone has loaded their ROM. Your SoulSilver ROM (.nds) stays on your machine.',
     'foot.disclaimer':'Fan project, not affiliated with Nintendo, Game Freak or The Pokémon Company. No ROM is provided or distributed — every player uses their own.',
+    'how.title':'How it works',
+    'how.need':'You need your own Pokémon SoulSilver or HeartGold cartridge (.nds file) — French or English.',
+    'how.s1':'Load your ROM (it stays on your machine, nothing is uploaded).',
+    'how.s2':'A photo of a place appears and slowly zooms out.',
+    'how.s3':'Walk your character to that place in the game — first there wins!',
+    'menu.solo':'🎮 Play solo / practice',
+    'demo.btn':'👁️ Watch a demo (no ROM)',
+    'demo.where':'Where is it?','demo.close':'Close demo',
+    'mobile.warn':'💻 Much better on a computer: loading a ROM (.nds) and running the emulator is hard on a phone.',
+    'emu.badRom':'⚠️ Version not recognized. Use Pokémon SoulSilver or HeartGold (French or English).',
+    'about.link':'About','about.title':'About PokéGeoGuessr',
+    'about.body':'A multiplayer GeoGuessr played directly inside Pokémon SoulSilver / HeartGold: find the place shown and walk your character there — first to arrive wins.\n\nA fan project by Taykaro, not affiliated with Nintendo, Game Freak or The Pokémon Company. No ROM is provided or distributed — every player uses their own. In-browser emulation via melonDS (WebMelon).',
     'emu.pickRom':'Choose your SoulSilver ROM (.nds) to start.',
     'emu.loading':'⏳ Loading the emulator…','emu.launched':'✅ Emulator running — pick Continue in the game',
     'emu.inGame':'⏳ In game? Pick Continue and walk…','emu.pos':'✅ Your position: map {map} — ({x}, {y})',
@@ -481,6 +573,17 @@ $('m-create').onclick = () => {
   filter = { region: $('m-region').value, type: $('m-type').value, difficulty: $('m-diff').value };
   socket.emit('room:create', { name: myName, room: rm, filter, maxPlayers: +$('m-max').value, password: $('m-pass').value.trim() }, onEntered);
 };
+// Jouer en solo : crée un salon privé (caché de la liste) et se lance tout seul
+// dès que la ROM est chargée. Parfait pour essayer sans attendre d'autres joueurs.
+let soloMode = false, soloStarted = false;
+$('m-solo').onclick = () => {
+  myName = $('m-name').value.trim() || (LANG==='en' ? 'Player' : 'Joueur');
+  const rm = 'solo-' + Math.random().toString(36).slice(2, 7);
+  room = rm.toLowerCase();
+  filter = { region: $('m-region').value, type: $('m-type').value, difficulty: $('m-diff').value };
+  soloMode = true; soloStarted = false;
+  socket.emit('room:create', { name: myName, room: rm, filter, maxPlayers: 0, password: '', solo: true }, onEntered);
+};
 function joinRoom(key, locked){
   const name = $('m-name').value.trim();
   if (!name) return alert(L('err.nickFirst'));
@@ -541,6 +644,8 @@ function renderLobby(s){
   }
   const isHost = s.host && myName && s.host.toLowerCase() === myName.toLowerCase();
   $('lobby-host').hidden = !isHost;
+  // Solo : dès que ma ROM est chargée (je suis "en jeu"), on lance automatiquement.
+  if (soloMode && isHost && s.canStart && !soloStarted) { soloStarted = true; socket.emit('game:start'); }
   $('lobby-wait').hidden = !!isHost;
   if (isHost){
     $('start-btn').disabled = !s.canStart;
@@ -790,6 +895,7 @@ function boot(){
       WebMelon.storage.createDirectory('/roms'); WebMelon.storage.write('/roms/game.nds', romData);
       WebMelon.cart.createCart(); WebMelon.cart.loadFileIntoCart('/roms/game.nds');
       const code=WebMelon.cart.getUnloadedCartCode();
+      if(!/^IP[GK]/.test(code||'')){ $('emustat').textContent=L('emu.badRom'); $('rom').disabled=false; return; }
       const save=new Uint8Array(await (await fetch('/dsa/IPGF.sav')).arrayBuffer());
       WebMelon.storage.write('/savefiles/'+code+'.sav', save);
       WebMelon.emulator.createEmulator(); WebMelon.emulator.setSavePath('/savefiles/'+code+'.sav');
@@ -876,6 +982,28 @@ $('set-reset').onclick = ()=>{ keyMap={...DEFAULT_KEYS}; localStorage.setItem('p
 if($('lang-btn')) $('lang-btn').onclick = ()=> setLang(LANG==='fr'?'en':'fr');
 applyStaticI18n(); renderFlag();
 updatePad();
+
+// ---------- DÉMO (sans ROM), À PROPOS, BANNIÈRE MOBILE ----------
+let demoTimer=null, demoI=0, demoList=[];
+async function loadDemo(){ if(demoList.length) return; try{ demoList = await (await fetch('/demo/manifest.json')).json(); }catch{} }
+function demoStep(){
+  if(!demoList.length){ $('demo-cap').textContent='…'; return; }
+  const it = demoList[demoI % demoList.length]; demoI++;
+  const img=$('demo-img'), cap=$('demo-cap');
+  img.style.transition='none'; img.style.transform='scale(6)';
+  cap.textContent = L('demo.where'); img.src='/demo/'+it.file;
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{ img.style.transition='transform 4.5s linear'; img.style.transform='scale(1)'; }));
+  demoTimer=setTimeout(()=>{ cap.textContent='📍 '+it.label; demoTimer=setTimeout(demoStep, 2200); }, 4300);
+}
+$('m-demo').onclick = ()=>{ $('demo').hidden=false; loadDemo().then(()=>{ demoI=0; clearTimeout(demoTimer); demoStep(); }); };
+$('demo-close').onclick = ()=>{ $('demo').hidden=true; clearTimeout(demoTimer); };
+$('about-link').onclick = ()=>{ $('about').hidden=false; };
+$('about-close').onclick = ()=>{ $('about').hidden=true; };
+for(const ov of document.querySelectorAll('.ovl')) ov.addEventListener('click', (e)=>{ if(e.target===ov){ ov.hidden=true; if(ov.id==='demo')clearTimeout(demoTimer); } });
+if(!localStorage.getItem('pg_mobilewarn')){
+  const isMob = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (matchMedia('(pointer:coarse)').matches && innerWidth<820);
+  if(isMob && $('mobile-warn')){ $('mobile-warn').hidden=false; $('mw-close').onclick=()=>{ $('mobile-warn').hidden=true; localStorage.setItem('pg_mobilewarn','1'); }; }
+}
 </script>
 </body>
 </html>
