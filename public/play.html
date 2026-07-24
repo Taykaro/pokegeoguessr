@@ -16,6 +16,7 @@
   .flagbtn { background:none; border:none; cursor:pointer; padding:0; display:flex; align-items:center; line-height:0; }
   .flagbtn svg { display:block; width:28px; height:auto; image-rendering:pixelated; border:2px solid var(--line); box-shadow:2px 2px 0 rgba(0,0,0,.25); }
   .flagbtn:active svg { transform:translate(1px,1px); box-shadow:1px 1px 0 rgba(0,0,0,.25); }
+  #site-foot { text-align:center; font-size:11px; line-height:1.4; color:var(--line2); opacity:.75; padding:14px 16px 20px; max-width:640px; margin:0 auto; }
   #head .head-btns { display:flex; gap:8px; }
   /* menu */
   #menu { max-width:420px; margin:6vh auto; padding:18px; }
@@ -347,6 +348,8 @@
   </div>
 </div>
 
+<footer id="site-foot" data-i18n="foot.disclaimer">Projet de fan non affilié à Nintendo, Game Freak ou The Pokémon Company. Aucune ROM n'est fournie ni distribuée — chaque joueur utilise la sienne.</footer>
+
 <script src="/socket.io/socket.io.js"></script>
 <script>
 const $ = (id) => document.getElementById(id);
@@ -365,6 +368,7 @@ const I18N = {
     'menu.maxp':'Joueurs max','menu.unlimited':'Illimité','menu.pass':'Mot de passe (option)','menu.passPh':'vide = public',
     'menu.createBtn':'Créer le salon','menu.lang':'Langue',
     'menu.hostNote':'Tu seras le meneur : tu lances la partie quand tout le monde a chargé sa ROM. Ta ROM SoulSilver (.nds) reste sur ta machine.',
+    'foot.disclaimer':'Projet de fan non affilié à Nintendo, Game Freak ou The Pokémon Company. Aucune ROM n\'est fournie ni distribuée — chaque joueur utilise la sienne.',
     'emu.pickRom':'Choisis ta ROM SoulSilver (.nds) pour démarrer.',
     'emu.loading':'⏳ Chargement de l\'émulateur…','emu.launched':'✅ Émulateur lancé — fais Continuer dans le jeu',
     'emu.inGame':'⏳ En jeu ? Fais Continuer et marche…','emu.pos':'✅ Ta position : map {map} — ({x}, {y})',
@@ -403,6 +407,7 @@ const I18N = {
     'menu.maxp':'Max players','menu.unlimited':'Unlimited','menu.pass':'Password (optional)','menu.passPh':'empty = public',
     'menu.createBtn':'Create room','menu.lang':'Language',
     'menu.hostNote':'You\'ll be the host: you start the game once everyone has loaded their ROM. Your SoulSilver ROM (.nds) stays on your machine.',
+    'foot.disclaimer':'Fan project, not affiliated with Nintendo, Game Freak or The Pokémon Company. No ROM is provided or distributed — every player uses their own.',
     'emu.pickRom':'Choose your SoulSilver ROM (.nds) to start.',
     'emu.loading':'⏳ Loading the emulator…','emu.launched':'✅ Emulator running — pick Continue in the game',
     'emu.inGame':'⏳ In game? Pick Continue and walk…','emu.pos':'✅ Your position: map {map} — ({x}, {y})',
@@ -487,7 +492,7 @@ function joinRoom(key, locked){
 // Liste des salons ouverts, mise à jour en direct.
 socket.on('rooms', (list) => {
   const box = $('room-list'); if (!box) return;
-  if (!list || !list.length){ box.innerHTML = '<p class="m-empty">'+esc(L('menu.noRooms'))+'</p>'; return; }
+  if (!list || !list.length){ box.innerHTML = '<p class="m-empty" data-i18n="menu.noRooms">'+esc(L('menu.noRooms'))+'</p>'; return; }
   box.innerHTML = '';
   for (const r of list){
     const live = r.phase !== 'lobby';
