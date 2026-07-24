@@ -275,6 +275,18 @@
   #demo-img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; image-rendering:pixelated; transform-origin:center; transition:transform 4.5s linear; }
   #demo-cap{ position:absolute; left:0; right:0; bottom:0; text-align:center; font-family:var(--disp); font-size:15px; font-weight:700; padding:8px; background:rgba(251,244,225,.92); color:var(--ink); border-top:3px solid var(--line); }
   .about-link{ background:none; border:none; color:var(--line2); text-decoration:underline; cursor:pointer; font:inherit; padding:0; }
+  #createbox > summary{ cursor:pointer; list-style:none; user-select:none; }
+  #createbox > summary::-webkit-details-marker{ display:none; }
+  #createbox > summary::after{ content:'▸'; float:right; opacity:.55; font-weight:400; } #createbox[open] > summary::after{ content:'▾'; }
+  .demo-card{ max-width:760px; }
+  .demo-cols{ display:flex; gap:12px; align-items:center; }
+  .demo-cols > #demo-stage{ flex:1.1; min-width:0; }
+  #demo-map{ flex:1; min-width:0; position:relative; opacity:0; transition:opacity .5s; }
+  #demo-map.show{ opacity:1; }
+  #demo-mapimg{ width:100%; aspect-ratio:376/160; object-fit:fill; display:block; image-rendering:pixelated; border:2px solid var(--line); border-radius:8px; background:#cfe8b0; }
+  #demo-pin{ position:absolute; width:14px; height:14px; margin:-7px 0 0 -7px; border-radius:50%; background:#e01b24; border:2px solid #fff; box-shadow:0 0 0 2px rgba(0,0,0,.45); }
+  #demo-place{ text-align:center; font-family:var(--disp); font-weight:700; color:var(--line); margin-top:6px; font-size:15px; }
+  @media(max-width:600px){ .demo-cols{ flex-direction:column; } }
 </style>
 </head>
 <body>
@@ -289,7 +301,7 @@
 <div id="menu" class="card">
   <p class="sub" data-i18n="menu.tagline" style="font-family:var(--disp);font-size:15px;color:var(--line2);margin-top:2px">Un GeoGuessr dans Pokémon SoulSilver</p>
 
-  <details id="howto" class="howbox" open>
+  <details id="howto" class="howbox">
     <summary data-i18n="how.title">Comment ça marche</summary>
     <p class="how-need" data-i18n="how.need">Il te faut ta propre cartouche Pokémon SoulSilver ou HeartGold (.nds).</p>
     <ol class="how-steps">
@@ -309,28 +321,30 @@
   <div class="m-sec" data-i18n="menu.rooms">🏠 Salons ouverts</div>
   <div id="room-list"><p class="m-empty" data-i18n="menu.noRooms">Aucun salon pour l'instant — crées-en un ! 👇</p></div>
 
-  <div class="m-sec" data-i18n="menu.create">➕ Créer un salon</div>
-  <input id="m-room" maxlength="20" data-i18n-ph="menu.roomPh" placeholder="Nom du salon (ex : soirée)">
-  <div class="row">
-    <div><label data-i18n="menu.region">Région</label><select id="m-region"><option value="all" data-i18n="opt.all">Tout</option><option value="johto">Johto</option><option value="kanto">Kanto</option></select></div>
-    <div><label data-i18n="menu.type">Lieux</label><select id="m-type"><option value="all" data-i18n="type.all">Tous</option><option value="ext" data-i18n="type.ext">Extérieurs</option><option value="int" data-i18n="type.int">Intérieurs</option></select></div>
-  </div>
-  <label data-i18n="menu.diff">Difficulté</label>
-  <select id="m-diff">
-    <option value="facile" data-i18n="diff.facileOpt">Facile — jauge en direct</option>
-    <option value="moyen" selected data-i18n="diff.moyenOpt">Moyen — jauge à chaque dézoom</option>
-    <option value="difficile" data-i18n="diff.difficileOpt">Difficile — aucune jauge</option>
-  </select>
-  <div class="row">
-    <div><label data-i18n="menu.maxp">Joueurs max</label><select id="m-max">
-      <option value="0" data-i18n="menu.unlimited">Illimité</option><option value="2">2</option><option value="3">3</option>
-      <option value="4">4</option><option value="6" selected>6</option><option value="8">8</option>
-      <option value="10">10</option><option value="16">16</option>
-    </select></div>
-    <div><label data-i18n="menu.pass">Mot de passe (option)</label><input id="m-pass" maxlength="24" data-i18n-ph="menu.passPh" placeholder="vide = public"></div>
-  </div>
-  <button id="m-create" data-i18n="menu.createBtn">Créer le salon</button>
-  <p class="sub" data-i18n="menu.hostNote" style="margin-top:12px">Tu seras le meneur : tu lances la partie quand tout le monde a chargé sa ROM. Ta ROM SoulSilver (.nds) reste sur ta machine.</p>
+  <details id="createbox" class="createbox">
+    <summary class="m-sec" data-i18n="menu.create">➕ Créer un salon</summary>
+    <input id="m-room" maxlength="20" data-i18n-ph="menu.roomPh" placeholder="Nom du salon (ex : soirée)">
+    <div class="row">
+      <div><label data-i18n="menu.region">Région</label><select id="m-region"><option value="all" data-i18n="opt.all">Tout</option><option value="johto">Johto</option><option value="kanto">Kanto</option></select></div>
+      <div><label data-i18n="menu.type">Lieux</label><select id="m-type"><option value="all" data-i18n="type.all">Tous</option><option value="ext" data-i18n="type.ext">Extérieurs</option><option value="int" data-i18n="type.int">Intérieurs</option></select></div>
+    </div>
+    <label data-i18n="menu.diff">Difficulté</label>
+    <select id="m-diff">
+      <option value="facile" data-i18n="diff.facileOpt">Facile — jauge en direct</option>
+      <option value="moyen" selected data-i18n="diff.moyenOpt">Moyen — jauge à chaque dézoom</option>
+      <option value="difficile" data-i18n="diff.difficileOpt">Difficile — aucune jauge</option>
+    </select>
+    <div class="row">
+      <div><label data-i18n="menu.maxp">Joueurs max</label><select id="m-max">
+        <option value="0" data-i18n="menu.unlimited">Illimité</option><option value="2">2</option><option value="3">3</option>
+        <option value="4">4</option><option value="6" selected>6</option><option value="8">8</option>
+        <option value="10">10</option><option value="16">16</option>
+      </select></div>
+      <div><label data-i18n="menu.pass">Mot de passe (option)</label><input id="m-pass" maxlength="24" data-i18n-ph="menu.passPh" placeholder="vide = public"></div>
+    </div>
+    <button id="m-create" data-i18n="menu.createBtn">Créer le salon</button>
+    <p class="sub" data-i18n="menu.hostNote" style="margin-top:12px">Tu seras le meneur : tu lances la partie quand tout le monde a chargé sa ROM. Ta ROM SoulSilver (.nds) reste sur ta machine.</p>
+  </details>
 </div>
 
 <!-- JEU -->
@@ -404,8 +418,11 @@
 <div id="mobile-warn" hidden><button id="mw-close" aria-label="Fermer">✕</button><span data-i18n="mobile.warn">Bien meilleur sur ordinateur.</span></div>
 
 <!-- Démo (sans ROM) : une photo qui se dézoome puis révèle le lieu, en boucle -->
-<div id="demo" class="ovl" hidden><div class="ovl-card">
-  <div id="demo-stage"><img id="demo-img" alt=""><div id="demo-cap"></div></div>
+<div id="demo" class="ovl" hidden><div class="ovl-card demo-card">
+  <div class="demo-cols">
+    <div id="demo-stage"><img id="demo-img" alt=""><div id="demo-cap"></div></div>
+    <div id="demo-map"><img id="demo-mapimg" alt=""><div id="demo-pin" hidden></div><div id="demo-place"></div></div>
+  </div>
   <div class="btns"><button id="demo-close" class="btn" data-i18n="demo.close">Fermer la démo</button></div>
 </div></div>
 
@@ -442,7 +459,7 @@ const I18N = {
     'how.s1':'Charge ta ROM (elle reste sur ta machine, rien n\'est envoyé).',
     'how.s2':'Une photo d\'un lieu s\'affiche et se dézoome peu à peu.',
     'how.s3':'Amène ton perso sur ce lieu dans le jeu — le 1er arrivé gagne !',
-    'menu.solo':'🎮 Jouer en solo / s\'entraîner',
+    'menu.solo':'🎮 Jouer en solo',
     'demo.btn':'👁️ Voir une démo (sans ROM)',
     'demo.where':'Où est-ce ?','demo.close':'Fermer la démo',
     'mobile.warn':'💻 Bien meilleur sur ordinateur : charger une ROM (.nds) et faire tourner l\'émulateur est difficile sur téléphone.',
@@ -493,7 +510,7 @@ const I18N = {
     'how.s1':'Load your ROM (it stays on your machine, nothing is uploaded).',
     'how.s2':'A photo of a place appears and slowly zooms out.',
     'how.s3':'Walk your character to that place in the game — first there wins!',
-    'menu.solo':'🎮 Play solo / practice',
+    'menu.solo':'🎮 Play solo',
     'demo.btn':'👁️ Watch a demo (no ROM)',
     'demo.where':'Where is it?','demo.close':'Close demo',
     'mobile.warn':'💻 Much better on a computer: loading a ROM (.nds) and running the emulator is hard on a phone.',
@@ -985,15 +1002,25 @@ updatePad();
 
 // ---------- DÉMO (sans ROM), À PROPOS, BANNIÈRE MOBILE ----------
 let demoTimer=null, demoI=0, demoList=[];
+const TMAP = {w:376,h:160,ax:0.2593999513979292,bx:0.018603848805583488,cx:-12.911060520109507,ay:0.007698563096823142,by:0.2865297156540539,cy:-9.206738242791948};
 async function loadDemo(){ if(demoList.length) return; try{ demoList = await (await fetch('/demo/manifest.json')).json(); }catch{} }
 function demoStep(){
   if(!demoList.length){ $('demo-cap').textContent='…'; return; }
   const it = demoList[demoI % demoList.length]; demoI++;
-  const img=$('demo-img'), cap=$('demo-cap');
+  const img=$('demo-img'), cap=$('demo-cap'), map=$('demo-map'), pin=$('demo-pin'), place=$('demo-place');
+  map.classList.remove('show'); pin.hidden=true; place.textContent='';
   img.style.transition='none'; img.style.transform='scale(6)';
   cap.textContent = L('demo.where'); img.src='/demo/'+it.file;
+  if(!$('demo-mapimg').getAttribute('src')) $('demo-mapimg').src='/townmap';
   requestAnimationFrame(()=>requestAnimationFrame(()=>{ img.style.transition='transform 4.5s linear'; img.style.transform='scale(1)'; }));
-  demoTimer=setTimeout(()=>{ cap.textContent='📍 '+it.label; demoTimer=setTimeout(demoStep, 2200); }, 4300);
+  demoTimer=setTimeout(()=>{
+    const name = (LANG==='fr' ? it.fr : it.en) || it.en || it.label || '';
+    cap.textContent = '📍 ' + name;
+    const px = TMAP.ax*it.gx + TMAP.bx*it.gy + TMAP.cx, py = TMAP.ay*it.gx + TMAP.by*it.gy + TMAP.cy;
+    pin.style.left = (100*px/TMAP.w) + '%'; pin.style.top = (100*py/TMAP.h) + '%'; pin.hidden = false;
+    place.textContent = name; map.classList.add('show');
+    demoTimer=setTimeout(demoStep, 3000);
+  }, 4300);
 }
 $('m-demo').onclick = ()=>{ $('demo').hidden=false; loadDemo().then(()=>{ demoI=0; clearTimeout(demoTimer); demoStep(); }); };
 $('demo-close').onclick = ()=>{ $('demo').hidden=true; clearTimeout(demoTimer); };
