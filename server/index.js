@@ -4,6 +4,7 @@ const express = require('express');
 const { Server } = require('socket.io');
 const { loadPack } = require('./pack');
 const { Room } = require('./game');
+const stats = require('./stats');
 
 const config = require('../config.json');
 const packName = process.env.PACK || config.pack;
@@ -95,6 +96,7 @@ io.on('connection', (socket) => {
 
   const enter = (r, name, admin) => {
     joined = { room: r, name, admin: !!admin };
+    stats.recordJoin();
     r.addPlayer(socket, name);
     if (admin) r.addAdmin(socket);
     return { ok: true, state: r.publicState(), admin: !!admin, adminKey: admin ? r.adminKey : undefined };
@@ -110,6 +112,7 @@ io.on('connection', (socket) => {
     if (!key) return ack && ack({ ok: false, error: 'Nom de room requis' });
     if (rooms.has(key)) return ack && ack({ ok: false, error: 'Cette room existe déjà — rejoins-la' });
     const res = enter(makeRoom(key, filter, sanitizeRoomOpts({ maxPlayers, password })), name);
+    stats.recordRoom();
     broadcastRooms();
     if (ack) ack(res);
   });
@@ -224,6 +227,13 @@ app.get('/simmap', (req, res) => {
   if (!pack.simFullMap) return res.status(403).send('Pas disponible pour ce pack');
   res.set('Content-Type', 'image/png');
   res.send(pack.fullMapBuffer());
+});
+
+// Stats d'activité (parties, manches, lieux joués). Protégé par STATS_KEY (env)
+// pour ne pas exposer publiquement. Sans STATS_KEY défini -> endpoint désactivé.
+app.get('/api/stats', (req, res) => {
+  if (!process.env.STATS_KEY || req.query.key !== process.env.STATS_KEY) return res.status(403).end();
+  res.json(stats.snapshot());
 });
 
 app.get('/api/pack', (req, res) => {

@@ -1,3 +1,5 @@
+const stats = require('./stats');
+
 // Message chaud/froid personnalisé selon le palier de proximité du joueur.
 function hintMessage(name, tier) {
   switch (tier) {
@@ -232,6 +234,7 @@ class Room {
     this.found = [];
     this.foundNames = new Set();
     this.target = this.pickTarget();
+    stats.recordRound(this.target);
     this.crops = this.pack.roundCrops(this.target);
     this.roundStartedAt = Date.now();
     this.scheduleZoom();
@@ -531,6 +534,7 @@ class Room {
     clearInterval(this.zoomClock);
     clearInterval(this.clutchClock);
     clearInterval(this.hintTimer);
+    stats.recordGame();
     this.phase = 'gameover';
     const standings = [...this.players.values()]
       .map((p) => ({ name: p.name, score: p.score }))
