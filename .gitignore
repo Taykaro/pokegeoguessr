@@ -47,3 +47,7 @@ discord-setup.sh
 
 # Stats d activite (persistance locale, ephemere sur Render)
 data/
+
+# Notes de travail locales
+CLAUDE.md
+HANDOFF.md
