@@ -9,7 +9,7 @@ Le jeu repose sur 3 briques indépendantes :
 2. **Banque de photos** (montrer un lieu) → pipeline de capture par téléport.
 3. **Serveur/UI** (déjà générique : `server/`, `public/play.html`).
 
-Seules 1 et 2 demandent du travail par jeu. Voir aussi `HANDOFF.md` (détails HGSS + pièges).
+Seules 1 et 2 demandent du travail par jeu.
 
 ---
 
@@ -58,7 +58,6 @@ régions d'un même jeu** (d'où la calibration mapID en comparant FR ↔ anglai
 
 **Ne jamais déplacer le perso à la main** (photos collées aux murs/portes) → on
 **téléporte** en patchant les warps directement dans une copie du `.nds` (aucun repack).
-Technique détaillée + pièges dans `HANDOFF.md` (§ « téléportation universelle »).
 
 **Pipeline (outils dans `tools/` et `bridge/`) :**
 1. `tools/extract-walkability.js` + `tools/extract-warps.js` — praticabilité + warps depuis la ROM.
