@@ -1,82 +1,83 @@
 # 🎯 PokéGeoGuessr
 
-> Un **GeoGuessr multijoueur dans Pokémon SoulSilver**. Le jeu montre une photo
-> d'un lieu qui se dézoome petit à petit ; le premier joueur qui **amène son
-> personnage** sur place (dans l'émulateur) marque le point. Tout se joue **dans
-> le navigateur** — pas d'installation.
+🇫🇷 [Version française](README.fr.md)
 
-**▶ Bêta en ligne : https://pokegeoguessr.onrender.com**
-**💬 Discord : _(à venir)_**
+> A **multiplayer GeoGuessr inside Pokémon SoulSilver**. The game shows a
+> screenshot of a place that slowly zooms out; the first player to **walk their
+> character** there (in the emulator) scores the point. Everything runs **in the
+> browser** — nothing to install.
 
-> *A multiplayer GeoGuessr inside Pokémon SoulSilver: a screenshot of a place slowly zooms out, and the first player to walk their character there in the emulator scores the point.*
+**▶ Live beta: https://pokegeoguessr.onrender.com**
+**💬 Discord: _(coming soon)_**
 
 <p align="center">
-  <img src="assets/demo.gif" alt="Démo : une photo se dézoome, puis le lieu est révélé sur la carte" width="760">
-  <br><em>Le mode démo (sans ROM) : la photo se dézoome, puis le lieu est révélé sur la carte du Pokégear.</em>
+  <img src="assets/demo.gif" alt="Demo: a screenshot zooms out, then the place is revealed on the map" width="760">
+  <br><em>Demo mode (no ROM needed): the screenshot zooms out, then the place is revealed on the Pokégear map.</em>
 </p>
 
 <p align="center">
-  <img src="assets/menu.png" alt="Menu principal" width="520">
+  <img src="assets/menu.png" alt="Main menu" width="520">
 </p>
 
-## Comment jouer
+## How to play
 
-1. Ouvre le site, **crée ou rejoins un salon** (difficulté, région, nombre de
-   joueurs max, mot de passe optionnel).
-2. Charge **ta propre ROM SoulSilver (.nds)** — elle reste sur ta machine, rien
-   n'est envoyé au serveur. L'émulateur démarre dans l'onglet.
-3. Tout le monde se balade un peu ; quand chacun est prêt, **le meneur lance**.
-4. Une photo très zoomée apparaît puis se **dézoome**. Cours jusqu'au lieu avec
-   ton perso : trouver tôt (image encore floue) rapporte plus de points. Une
-   **fenêtre « clutch »** laisse ~30 s aux autres pour te rejoindre.
-5. **Premier à 10 points** gagne la partie.
+1. Open the site and **create or join a room** (difficulty, region, max
+   players, optional password).
+2. Load **your own SoulSilver ROM (.nds)** — it stays on your machine, nothing
+   is sent to the server. The emulator starts right in the tab.
+3. Everyone walks around for a bit; when all players are ready, **the host
+   starts the game**.
+4. A heavily zoomed-in screenshot appears and slowly **zooms out**. Run to the
+   place with your character: finding it early (while the image is still
+   blurry) earns more points. A **"clutch" window** gives the others ~30 s to
+   catch up.
+5. **First to 10 points** wins the game.
 
-Indices **chaud/froid** en Poké Ball → Master Ball, 3 modes de difficulté,
-manette tactile pour jouer au téléphone, révélation de fin de manche sur la
-carte du Pokégear.
+**Hot/cold** hints from Poké Ball to Master Ball, 3 difficulty modes, a touch
+gamepad to play on a phone, and an end-of-round reveal on the Pokégear map.
 
-## Sous le capot
+## Under the hood
 
-- **Serveur** : Node + Express + **Socket.IO** — salons, rounds, dézoom, détection
-  de victoire par **comparaison de coordonnées**.
-- **Émulateur navigateur** : melonDS compilé en **WASM** (DS Anywhere / WebMelon),
-  BIOS libre — aucun BIOS proprio requis.
-- **Lecture de position** : scan de la RAM de l'émulateur (gamecode `IPGF`) pour
-  lire les coordonnées du joueur, comparées à la cible ± une marge.
-- **Photos** : vraies captures du jeu, recadrées et zoomées **côté serveur** (la
-  carte complète ne fuit jamais au client, pas de triche possible).
+- **Server**: Node + Express + **Socket.IO** — rooms, rounds, zoom-out, win
+  detection by **comparing coordinates**.
+- **In-browser emulator**: melonDS compiled to **WASM** (DS Anywhere /
+  WebMelon) with a free BIOS — no proprietary BIOS required.
+- **Position reading**: the emulator's RAM is scanned (game code `IPGF`) to read
+  the player's coordinates, compared with the target ± a margin.
+- **Screenshots**: real in-game captures, cropped and zoomed **server-side** (the
+  full map never reaches the client, so no cheating).
 
-## Dev local
+## Local development
 
 ```bash
 npm install
 npm start        # http://localhost:3000
 ```
 
-`config.json` : intervalle de dézoom, marge de détection, score cible, durée de
-la fenêtre clutch. `public/sim.html` = simulateur (déplacement aux flèches) pour
-tester la boucle de jeu **sans émulateur ni ROM**.
+`config.json`: zoom-out interval, detection margin, target score, length of the
+clutch window. `public/sim.html` is a simulator (arrow-key movement) to test the
+game loop **without an emulator or ROM**.
 
 ## Structure
 
 ```
-server/                serveur de partie (Node + Socket.IO)
-public/                client web (jeu + simulateur + assets)
-gamepacks/hgss_photos/ pack SoulSilver servi aux joueurs (photos + calibration)
-tools/                 extraction ROM (praticabilité, warps, points intérieurs…)
-bridge/                pont pour émulateur externe (mode avancé, optionnel)
-config.json            réglages de partie
+server/                game server (Node + Socket.IO)
+public/                web client (game + simulator + assets)
+gamepacks/hgss_photos/ SoulSilver pack served to players (screenshots + calibration)
+tools/                 ROM extraction (walkability, warps, indoor spots…)
+bridge/                bridge to an external emulator (advanced mode, optional)
+config.json            game settings
 ```
 
-## Statut
+## Status
 
-**Bêta.** Retours et idées bienvenus sur le Discord. Le serveur d'hébergement
-va changer pour tenir la charge.
+**Beta.** Feedback and ideas are welcome on the Discord. The hosting server
+will change to handle more players.
 
-## ⚖️ Avis
+## ⚖️ Disclaimer
 
-Projet de **fan**, **sans aucun lien avec Nintendo, Game Freak ou The Pokémon
-Company**. Aucune ROM n'est fournie ni distribuée — chaque joueur utilise **sa
-propre copie légale** du jeu. « Pokémon », « SoulSilver » et les éléments
-associés appartiennent à leurs détenteurs respectifs. Le code de ce dépôt est
-sous licence MIT ; il ne couvre pas les contenus appartenant à des tiers.
+**Fan project**, **not affiliated with Nintendo, Game Freak or The Pokémon
+Company**. No ROM is provided or distributed — every player uses **their own
+legal copy** of the game. "Pokémon", "SoulSilver" and related names belong to
+their respective owners. The code in this repository is MIT-licensed; the
+license does not cover third-party content.
