@@ -8,7 +8,16 @@
 **▶ Bêta en ligne : https://pokegeoguessr.onrender.com**
 **💬 Discord : _(à venir)_**
 
-<!-- Ajoute ici un GIF de 15-20 s d'une manche (l'atout marketing n°1). -->
+> *A multiplayer GeoGuessr inside Pokémon SoulSilver: a screenshot of a place slowly zooms out, and the first player to walk their character there in the emulator scores the point.*
+
+<p align="center">
+  <img src="assets/demo.gif" alt="Démo : une photo se dézoome, puis le lieu est révélé sur la carte" width="760">
+  <br><em>Le mode démo (sans ROM) : la photo se dézoome, puis le lieu est révélé sur la carte du Pokégear.</em>
+</p>
+
+<p align="center">
+  <img src="assets/menu.png" alt="Menu principal" width="520">
+</p>
 
 ## Comment jouer
 
