@@ -1,4 +1,5 @@
 const stats = require('./stats');
+const accounts = require('./accounts');
 
 // Message chaud/froid personnalisé selon le palier de proximité du joueur.
 function hintMessage(name, tier) {
@@ -452,6 +453,7 @@ class Room {
     this.foundNames.add(player.name.toLowerCase());
     // record de vitesse de cette photo (annoncé à la révélation du round)
     if (stats.recordFind(this.target, player.name, ms, order === 0).newRecord) this.roundNewRecord = player.name;
+    if (player.accountKey) accounts.recordFound(player.accountKey);
     this.channel().emit('round:found', { name: player.name, pts, first: order === 0, elapsedSec: elapsed });
     console.log(`[${this.name}] ${player.name} a trouvé en ${elapsed}s (+${pts} pts, ${order === 0 ? '1er' : 'clutch #' + order})`);
     return pts;
@@ -542,6 +544,10 @@ class Room {
     clearInterval(this.hintTimer);
     stats.recordGame();
     this.phase = 'gameover';
+    // Enregistre les stats des joueurs connectés à un compte.
+    for (const p of this.players.values()) {
+      if (p.accountKey) accounts.recordGame(p.accountKey, { won: p.name === winnerName, score: p.score });
+    }
     const standings = [...this.players.values()]
       .map((p) => ({ name: p.name, score: p.score }))
       .sort((a, b) => b.score - a.score);

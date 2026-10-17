@@ -323,6 +323,18 @@
   #demo-pin{ position:absolute; width:14px; height:14px; margin:-7px 0 0 -7px; border-radius:50%; background:#e01b24; border:2px solid #fff; box-shadow:0 0 0 2px rgba(0,0,0,.45); }
   #demo-place{ text-align:center; font-family:var(--disp); font-weight:700; color:var(--line); margin-top:6px; font-size:15px; }
   @media(max-width:600px){ .demo-cols{ flex-direction:column; } }
+  .acctbtn{ background:none; border:none; cursor:pointer; font-size:17px; color:var(--line); font-family:var(--disp); font-weight:700; max-width:130px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:0 2px; }
+  .ovl-card input{ width:100%; box-sizing:border-box; padding:10px; margin:6px 0; border:2px solid var(--line); border-radius:8px; font-family:var(--disp); font-size:14px; background:#fff; color:var(--ink); }
+  .acct-err{ color:var(--redd); font-size:13px; min-height:16px; margin:4px 0 0; font-family:var(--disp); }
+  .acct-stats{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:10px 0; font-family:var(--disp); font-size:14px; }
+  .acct-stats div{ background:rgba(255,255,255,.45); border:2px solid var(--line); border-radius:8px; padding:7px 9px; }
+  .acct-stats b{ color:var(--red); font-size:18px; }
+  #acct-prompt{ position:fixed; top:66px; right:12px; z-index:55; max-width:250px; background:var(--cream); color:var(--ink); border:3px solid var(--line); border-radius:12px; box-shadow:0 4px 0 var(--line2); padding:11px 12px 12px; font-family:var(--disp); font-size:13px; line-height:1.4; animation:bob 2.6s ease-in-out infinite; }
+  #acct-prompt #acct-prompt-btn{ display:block; margin-top:9px; width:100%; background:var(--green); color:#fff; border:none; border-radius:8px; box-shadow:0 2px 0 var(--greend); padding:8px; font-family:var(--disp); font-weight:700; cursor:pointer; }
+  #acct-prompt::before{ content:""; position:absolute; top:-11px; right:133px; border:8px solid transparent; border-bottom-color:var(--line); border-top:0; }
+  @media (max-width:700px){ #acct-prompt{ top:54px; left:10px; right:10px; max-width:none; } #acct-prompt::before{ display:none; } }
+  #acct-prompt #acct-prompt-x{ position:absolute; top:1px; right:6px; background:none; border:none; cursor:pointer; color:var(--line); font-size:14px; }
+  @keyframes bob{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-6px); } }
 </style>
 </head>
 <body>
@@ -331,7 +343,7 @@
   <div class="track"><img src="/img/landscape.png" alt=""><img src="/img/landscape.png" alt=""></div>
   <span class="pcloud c1"></span><span class="pcloud c2"></span><span class="pcloud c3"></span>
 </div>
-<div id="head"><h1><img class="brand" src="/img/logo.png" alt=""> PokéGeoGuessr</h1><div class="head-btns"><button id="lang-btn" class="flagbtn" title="Language / Langue"></button><button id="settings-btn" data-i18n-title="set.title" title="Réglages (contrôles)">⚙️</button><button id="mute" data-i18n-title="sound.title" title="Sons">🔊</button></div></div>
+<div id="head"><h1><img class="brand" src="/img/logo.png" alt=""> PokéGeoGuessr</h1><div class="head-btns"><button id="acct-btn" class="acctbtn" data-i18n-title="acct.title" title="Compte">👤</button><button id="lang-btn" class="flagbtn" title="Language / Langue"></button><button id="settings-btn" data-i18n-title="set.title" title="Réglages (contrôles)">⚙️</button><button id="mute" data-i18n-title="sound.title" title="Sons">🔊</button></div></div>
 
 <!-- MENU -->
 <div id="menu" class="card">
@@ -480,6 +492,27 @@
   <div class="btns"><button id="demo-close" class="btn" data-i18n="demo.close">Fermer la démo</button></div>
 </div></div>
 
+<!-- Compte -->
+<div id="acct" class="ovl" hidden><div class="ovl-card">
+  <h2 data-i18n="acct.title">Compte</h2>
+  <div id="acct-forms">
+    <input id="acct-nick" maxlength="20" data-i18n-ph="menu.nickPh" placeholder="Pseudo">
+    <input id="acct-pass" type="password" maxlength="40" data-i18n-ph="acct.pass" placeholder="Mot de passe">
+    <p id="acct-err" class="acct-err"></p>
+    <div class="btns"><button id="acct-login" class="btn" data-i18n="acct.login">Se connecter</button><button id="acct-signup" class="btn" data-i18n="acct.signup">Créer un compte</button></div>
+    <p class="sub" data-i18n="acct.note" style="margin-top:10px">Tu peux jouer avec n'importe quel pseudo. Pour enregistrer tes stats, crée un compte !</p>
+  </div>
+  <div id="acct-me" hidden>
+    <p><b data-i18n="acct.connected">Connecté</b> : <span id="acct-me-nick"></span></p>
+    <div id="acct-stats" class="acct-stats"></div>
+    <div class="btns"><button id="acct-logout" class="btn btn-danger" data-i18n="acct.logout">Se déconnecter</button></div>
+  </div>
+  <div class="btns" style="margin-top:10px"><button id="acct-close" class="btn" data-i18n="set.close">Fermer</button></div>
+</div></div>
+
+<!-- Invitation à créer un compte (boîte flottante façon Pokémon) -->
+<div id="acct-prompt" hidden><button id="acct-prompt-x" aria-label="Fermer">✕</button><span data-i18n="acct.prompt">Choisis un pseudo et joue ! Mais crée un compte pour garder tes stats. 🏆</span><button id="acct-prompt-btn" data-i18n="acct.promptBtn">Créer un compte</button></div>
+
 <!-- À propos -->
 <div id="about" class="ovl" hidden><div class="ovl-card">
   <h2 data-i18n="about.title">À propos de PokéGeoGuessr</h2>
@@ -522,6 +555,11 @@ const I18N = {
     'emu.badRom':'⚠️ Version non reconnue. Utilise Pokémon SoulSilver ou HeartGold (français ou anglais).',
     'about.link':'À propos','about.title':'À propos de PokéGeoGuessr',
     'about.body':'Un GeoGuessr multijoueur jouable directement dans Pokémon SoulSilver / HeartGold : trouve le lieu montré et amène ton perso sur place, le premier arrivé gagne.\n\nProjet de fan créé par Taykaro, non affilié à Nintendo, Game Freak ou The Pokémon Company. Aucune ROM n\'est fournie ni distribuée — chaque joueur utilise la sienne. Émulation dans le navigateur via melonDS (WebMelon).',
+    'acct.title':'Compte','acct.login':'Se connecter','acct.signup':'Créer un compte','acct.logout':'Se déconnecter',
+    'acct.pass':'Mot de passe','acct.connected':'Connecté','acct.myStats':'Mes stats','acct.neterr':'Erreur réseau',
+    'acct.note':'Tu peux jouer avec n\'importe quel pseudo. Pour enregistrer tes stats, crée un compte !',
+    'acct.games':'Parties','acct.wins':'Victoires','acct.points':'Points','acct.best':'Meilleur score','acct.found':'Manches trouvées',
+    'acct.prompt':'Choisis un pseudo et joue ! Mais crée un compte pour garder tes stats. 🏆','acct.promptBtn':'Créer un compte',
     'emu.pickRom':'SoulSilver ou HeartGold (.nds), FR ou EN — elle reste sur ta machine.',
     'emu.loading':'⏳ Chargement de l\'émulateur…','emu.launched':'✅ Émulateur lancé — fais Continuer dans le jeu',
     'emu.inGame':'⏳ En jeu ? Fais Continuer et marche…','emu.pos':'✅ Ta position : map {map} — ({x}, {y})',
@@ -582,6 +620,11 @@ const I18N = {
     'emu.badRom':'⚠️ Version not recognized. Use Pokémon SoulSilver or HeartGold (French or English).',
     'about.link':'About','about.title':'About PokéGeoGuessr',
     'about.body':'A multiplayer GeoGuessr played directly inside Pokémon SoulSilver / HeartGold: find the place shown and walk your character there — first to arrive wins.\n\nA fan project by Taykaro, not affiliated with Nintendo, Game Freak or The Pokémon Company. No ROM is provided or distributed — every player uses their own. In-browser emulation via melonDS (WebMelon).',
+    'acct.title':'Account','acct.login':'Log in','acct.signup':'Sign up','acct.logout':'Log out',
+    'acct.pass':'Password','acct.connected':'Logged in','acct.myStats':'My stats','acct.neterr':'Network error',
+    'acct.note':'You can play with any nickname. To save your stats, create an account!',
+    'acct.games':'Games','acct.wins':'Wins','acct.points':'Points','acct.best':'Best score','acct.found':'Rounds found',
+    'acct.prompt':'Pick a nickname and play! But sign up to keep your stats. 🏆','acct.promptBtn':'Sign up',
     'emu.pickRom':'SoulSilver or HeartGold (.nds), FR or EN — it stays on your machine.',
     'emu.loading':'⏳ Loading the emulator…','emu.launched':'✅ Emulator running — pick Continue in the game',
     'emu.inGame':'⏳ In game? Pick Continue and walk…','emu.pos':'✅ Your position: map {map} — ({x}, {y})',
@@ -652,7 +695,8 @@ const regionLabel = (r) => (r==='all' ? L('region.all') : (r==='johto'?'Johto':(
 const typeLabel = (x) => (x==='all' ? L('type.all') : (x==='ext'?L('type.ext'):(x==='int'?L('type.int'):x)));
 
 function onEntered(res){
-  if (res && res.ok){ joined = true; $('menu').hidden = true; $('game').hidden = false; apply(res.state); updatePad(); }
+  if (res && res.ok){ joined = true; $('menu').hidden = true; $('game').hidden = false; apply(res.state); updatePad();
+    if ($('acct-prompt')) $('acct-prompt').hidden = true; } // la bulle « crée un compte » ne reste pas sur le jeu
   else alert(res && res.error ? res.error : L('err.cantJoin'));
 }
 $('m-create').onclick = () => {
@@ -660,7 +704,7 @@ $('m-create').onclick = () => {
   if (!name) return alert(L('err.enterNick')); if (!rm) return alert(L('err.roomName'));
   myName = name; room = rm.toLowerCase();
   filter = { region: $('m-region').value, type: $('m-type').value, difficulty: $('m-diff').value };
-  socket.emit('room:create', { name: myName, room: rm, filter, maxPlayers: +$('m-max').value, password: $('m-pass').value.trim() }, onEntered);
+  socket.emit('room:create', { name: myName, room: rm, filter, maxPlayers: +$('m-max').value, password: $('m-pass').value.trim(), token: authToken }, onEntered);
 };
 // Jouer en solo : crée un salon privé (caché de la liste) ; le joueur charge sa
 // ROM puis clique « Lancer la partie ». Parfait pour essayer sans attendre d'autres joueurs.
@@ -671,7 +715,7 @@ $('m-solo').onclick = () => {
   room = rm.toLowerCase();
   filter = { region: $('m-region').value, type: $('m-type').value, difficulty: $('m-diff').value };
   soloMode = true;
-  socket.emit('room:create', { name: myName, room: rm, filter, maxPlayers: 0, password: '', solo: true }, onEntered);
+  socket.emit('room:create', { name: myName, room: rm, filter, maxPlayers: 0, password: '', solo: true, token: authToken }, onEntered);
 };
 function joinRoom(key, locked){
   const name = $('m-name').value.trim();
@@ -679,7 +723,7 @@ function joinRoom(key, locked){
   let password = '';
   if (locked){ password = prompt(L('room.passPrompt',{room:key})); if (password === null) return; }
   myName = name; room = key;
-  socket.emit('room:join', { name: myName, room: key, password }, onEntered);
+  socket.emit('room:join', { name: myName, room: key, password, token: authToken }, onEntered);
 }
 // Liste des salons ouverts, mise à jour en direct.
 socket.on('rooms', (list) => {
@@ -1166,6 +1210,28 @@ if(!localStorage.getItem('pg_mobilewarn')){
   const isMob = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (matchMedia('(pointer:coarse)').matches && innerWidth<820);
   if(isMob && $('mobile-warn')){ $('mobile-warn').hidden=false; $('mw-close').onclick=()=>{ $('mobile-warn').hidden=true; localStorage.setItem('pg_mobilewarn','1'); }; }
 }
+
+// ---------- COMPTES ----------
+let authToken = localStorage.getItem('pg_token') || '', authNick = '';
+function renderAcctStats(s){ s=s||{}; $('acct-stats').innerHTML = [['acct.games',s.games],['acct.wins',s.wins],['acct.points',s.points],['acct.best',s.best],['acct.found',s.found]].map(([k,v])=>`<div>${esc(L(k))}<br><b>${v||0}</b></div>`).join(''); }
+function setLoggedIn(d){ authNick=d.nick; $('acct-btn').textContent='👤 '+d.nick; $('acct-forms').hidden=true; $('acct-me').hidden=false; $('acct-me-nick').textContent=d.nick; renderAcctStats(d.stats); if($('m-name')&&!$('m-name').value)$('m-name').value=d.nick; if($('acct-prompt'))$('acct-prompt').hidden=true; }
+function setLoggedOut(){ authToken=''; authNick=''; localStorage.removeItem('pg_token'); $('acct-btn').textContent='👤'; $('acct-forms').hidden=false; $('acct-me').hidden=true; }
+async function acctRefresh(){ if(!authToken){ setLoggedOut(); return; } try{ const r=await fetch('/api/me?token='+encodeURIComponent(authToken)); if(r.ok){ setLoggedIn(await r.json()); return; } }catch{} setLoggedOut(); }
+async function acctSubmit(path){ const nick=$('acct-nick').value.trim(), pass=$('acct-pass').value; $('acct-err').textContent='';
+  try{ const r=await fetch('/api/'+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nick,pass})}); const d=await r.json();
+    if(d.error){ $('acct-err').textContent=d.error; return; } authToken=d.token; localStorage.setItem('pg_token',authToken); setLoggedIn(d); $('acct').hidden=true; }
+  catch{ $('acct-err').textContent=L('acct.neterr'); } }
+$('acct-btn').onclick=()=>{ $('acct').hidden=false; };
+$('acct-close').onclick=()=>{ $('acct').hidden=true; };
+$('acct-login').onclick=()=>acctSubmit('login');
+$('acct-signup').onclick=()=>acctSubmit('register');
+$('acct-logout').onclick=()=>{ setLoggedOut(); $('acct').hidden=true; };
+if(!authToken && !localStorage.getItem('pg_promptdismiss') && $('acct-prompt')){
+  $('acct-prompt').hidden=false;
+  $('acct-prompt-btn').onclick=()=>{ $('acct-prompt').hidden=true; $('acct').hidden=false; };
+  $('acct-prompt-x').onclick=()=>{ $('acct-prompt').hidden=true; localStorage.setItem('pg_promptdismiss','1'); };
+}
+acctRefresh();
 </script>
 </body>
 </html>

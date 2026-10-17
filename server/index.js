@@ -5,6 +5,7 @@ const { Server } = require('socket.io');
 const { loadPack } = require('./pack');
 const { Room } = require('./game');
 const stats = require('./stats');
+const accounts = require('./accounts');
 
 const config = require('../config.json');
 const packName = process.env.PACK || config.pack;
@@ -102,10 +103,13 @@ io.on('connection', (socket) => {
   let joined = null; // { room, name }
   socket.emit('rooms', roomList()); // liste initiale pour le menu
 
-  const enter = (r, name, admin) => {
+  const enter = (r, name, admin, token) => {
     joined = { room: r, name, admin: !!admin };
     stats.recordJoin(name);
     r.addPlayer(socket, name);
+    // Compte connecté : on lie les stats de ce joueur à son compte.
+    const k = token ? accounts.verifyToken(token) : null;
+    if (k) { const p = r.findPlayerByName(name); if (p) p.accountKey = k; joined.accountKey = k; }
     if (admin) r.addAdmin(socket);
     return { ok: true, state: r.publicState(), admin: !!admin, adminKey: admin ? r.adminKey : undefined };
   };
@@ -113,33 +117,37 @@ io.on('connection', (socket) => {
   socket.on('rooms:get', (ack) => { if (ack) ack(roomList()); });
 
   // Créer une room (le créateur devient meneur ; réglages figés à la création).
-  socket.on('room:create', ({ name, room, filter, maxPlayers, password, solo }, ack) => {
+  socket.on('room:create', ({ name, room, filter, maxPlayers, password, solo, token }, ack) => {
     name = String(name || '').trim().slice(0, 20);
     const key = String(room || '').trim().toLowerCase().slice(0, 20);
     if (!name) return ack && ack({ ok: false, error: 'Pseudo requis' });
     if (!key) return ack && ack({ ok: false, error: 'Nom de room requis' });
     if (isBadName(name) || (!solo && isBadName(key))) return ack && ack({ ok: false, error: 'Nom non autorisé' });
+    // Pseudo d'un compte : réservé à son propriétaire (connecté) — pas d'usurpation
+    if (accounts.isRegistered(name) && accounts.verifyToken(token) !== name.toLowerCase()) return ack && ack({ ok: false, error: 'Ce pseudo appartient à un compte : connecte-toi (👤) ou choisis-en un autre' });
     if (rooms.has(key)) return ack && ack({ ok: false, error: 'Cette room existe déjà — rejoins-la' });
     const r = makeRoom(key, filter, sanitizeRoomOpts({ maxPlayers, password }));
     r.solo = !!solo;
-    const res = enter(r, name);
+    const res = enter(r, name, false, token);
     stats.recordRoom();
     broadcastRooms();
     if (ack) ack(res);
   });
 
   // Rejoindre un salon existant (contrôle mot de passe + salon plein).
-  socket.on('room:join', ({ name, room, password }, ack) => {
+  socket.on('room:join', ({ name, room, password, token }, ack) => {
     name = String(name || '').trim().slice(0, 20);
     const key = String(room || '').trim().toLowerCase();
     if (!name) return ack && ack({ ok: false, error: 'Pseudo requis' });
     if (isBadName(name)) return ack && ack({ ok: false, error: 'Pseudo non autorisé' });
+    // Pseudo d'un compte : réservé à son propriétaire (connecté) — pas d'usurpation
+    if (accounts.isRegistered(name) && accounts.verifyToken(token) !== name.toLowerCase()) return ack && ack({ ok: false, error: 'Ce pseudo appartient à un compte : connecte-toi (👤) ou choisis-en un autre' });
     if (!rooms.has(key)) return ack && ack({ ok: false, error: 'Room introuvable' });
     const r = rooms.get(key);
     if (r.password && String(password || '') !== r.password) return ack && ack({ ok: false, error: 'Mot de passe incorrect', locked: true });
     const existing = r.findPlayerByName(name); // reconnexion (même pseudo) : pas bloquée par la limite
     if (!existing && r.isFull()) return ack && ack({ ok: false, error: 'Salon complet' });
-    const res = enter(r, name);
+    const res = enter(r, name, false, token);
     broadcastRooms();
     if (ack) ack(res);
   });
@@ -265,6 +273,23 @@ app.get('/admin/close-room', (req, res) => {
   rooms.delete(key);
   broadcastRooms();
   res.json({ ok: true, closed: key });
+});
+
+// --- Comptes joueurs ---
+app.post('/api/register', (req, res) => {
+  const { nick, pass } = req.body || {};
+  if (isBadName(nick)) return res.json({ error: 'Pseudo non autorisé' });
+  res.json(accounts.register(nick, pass));
+});
+app.post('/api/login', (req, res) => {
+  const { nick, pass } = req.body || {};
+  res.json(accounts.login(nick, pass));
+});
+app.get('/api/me', (req, res) => {
+  const tok = String(req.headers.authorization || '').replace(/^Bearer /, '') || req.query.token;
+  const m = accounts.me(tok);
+  if (!m) return res.status(401).json({ error: 'non connecté' });
+  res.json(m);
 });
 
 app.get('/api/pack', (req, res) => {
