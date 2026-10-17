@@ -8,7 +8,7 @@
 > browser** — nothing to install.
 
 **▶ Live beta: https://pokegeo.net**
-**💬 Discord: _(coming soon)_**
+**💬 Discord: https://discord.gg/4nJJ4c2kC3**
 
 <p align="center">
   <img src="assets/demo.gif" alt="Demo: a screenshot zooms out, then the place is revealed on the map" width="760">

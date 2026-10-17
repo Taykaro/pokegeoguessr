@@ -8,7 +8,7 @@
 > le navigateur** — pas d'installation.
 
 **▶ Bêta en ligne : https://pokegeo.net**
-**💬 Discord : _(à venir)_**
+**💬 Discord : https://discord.gg/4nJJ4c2kC3**
 
 <p align="center">
   <img src="assets/demo.gif" alt="Démo : une photo se dézoome, puis le lieu est révélé sur la carte" width="760">
