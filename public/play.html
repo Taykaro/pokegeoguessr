@@ -47,10 +47,37 @@
   #rompick { margin-bottom:8px; }
   #rompick input { width:100%; box-sizing:border-box; padding:8px; background:#0f1117; color:#e8ebf0; border:1px solid #2c3444; border-radius:8px; }
   #emustat { font-size:12px; color:#8a93a6; margin-top:6px; text-align:center; }
-  #romsaved { display:flex; gap:8px; align-items:center; margin-bottom:8px; } #romsaved[hidden] { display:none; }
-  #rom-use small { opacity:.8; font-size:11px; }
-  #rom-forget { background:none; border:none; color:#8a93a6; text-decoration:underline; cursor:pointer; font-size:12px; padding:0 4px; white-space:nowrap; }
-  #romkeep-l { display:flex; gap:6px; align-items:center; justify-content:center; font-size:12px; color:#8a93a6; margin-top:6px; cursor:pointer; } #romkeep-l[hidden] { display:none; }
+  /* sélecteur de ROM : cartouche enregistrée + zone « choisir / glisser » + interrupteur */
+  .romcart { display:flex; align-items:center; gap:10px; padding:10px; margin-bottom:10px; border-radius:12px; background:var(--paper); border:2px solid var(--cream2); }
+  .cart-ico { flex:none; position:relative; width:30px; height:36px; border-radius:4px 4px 7px 7px; border:2px solid var(--line); background:linear-gradient(#dfe3ea,#a9b1bd); box-shadow:0 2px 0 var(--line2); }
+  .cart-ico::after { content:""; position:absolute; left:4px; right:4px; top:5px; height:14px; border-radius:2px; background:#5b6f8f; }
+  .cart-ico.hg { background:linear-gradient(#f6dc8a,#d9a93a); } .cart-ico.hg::after { background:#b4462e; }
+  .cart-info { flex:1; min-width:0; display:flex; flex-direction:column; line-height:1.25; }
+  .cart-info b { font-family:var(--disp); font-size:15px; color:var(--ink); }
+  .cart-info small { font-size:11px; color:var(--ink2); }
+  #rom-use { flex:none; padding:9px 14px; }
+  #rom-forget { flex:none; background:none; border:none; color:var(--ink2); font-size:15px; line-height:1; cursor:pointer; padding:6px 7px; border-radius:7px; }
+  #rom-forget:hover { color:var(--red); background:rgba(0,0,0,.06); }
+  .romdrop { display:flex; flex-direction:column; align-items:center; gap:3px; padding:14px 12px; border:3px dashed #c8b688; border-radius:12px; background:var(--paper); cursor:pointer; text-align:center; transition:border-color .12s, background .12s, transform .08s; }
+  .romdrop:hover, .romdrop.over { border-color:var(--green); background:#eef6e4; }
+  .romdrop:active { transform:translateY(1px); }
+  .romdrop.busy { pointer-events:none; opacity:.55; }
+  .drop-ico { font-size:26px; line-height:1; }
+  .drop-main { font-family:var(--disp); font-weight:700; font-size:16px; color:var(--line2); }
+  .drop-sub { font-size:12px; color:var(--ink2); }
+  .romdrop .main-other, .romdrop.compact .main-new, .romdrop.compact .drop-ico, .romdrop.compact .drop-sub { display:none; }
+  .romdrop.compact { padding:8px 10px; border-width:2px; } .romdrop.compact .main-other { display:inline; font-size:13px; }
+  .switch { display:flex; align-items:center; justify-content:center; gap:8px; margin-top:9px; font-size:12px; color:var(--ink2); cursor:pointer; user-select:none; }
+  #rompick .switch input { position:absolute; opacity:0; width:0; height:0; padding:0; border:0; }
+  .switch .sw { flex:none; position:relative; width:30px; height:17px; border-radius:9px; background:#cbbf9f; transition:background .15s; }
+  .switch .sw::after { content:""; position:absolute; top:2px; left:2px; width:13px; height:13px; border-radius:50%; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.3); transition:left .15s; }
+  .switch input:checked + .sw { background:var(--green); } .switch input:checked + .sw::after { left:15px; }
+  .switch input:focus-visible + .sw { outline:2px solid var(--blue); outline-offset:2px; }
+  .romcart[hidden], .romdrop[hidden], .switch[hidden] { display:none; }
+  /* salon en solo : pas de nom de salon ni de liste de joueurs */
+  #lobby .solo-title { display:none; }
+  #lobby.solo .solo-title { display:block; }
+  #lobby.solo .room-title, #lobby.solo #lobby-players, #lobby.solo #lobby-note { display:none; }
   #photo-wrap { position:relative; width:100%; aspect-ratio:4/3; background:#000; border-radius:10px; overflow:hidden; }
   #photo { width:100%; height:100%; object-fit:contain; image-rendering:pixelated; }
   #revealCanvas { position:absolute; inset:0; width:100%; height:100%; background:#0b0e14; }
@@ -355,10 +382,21 @@
 <div id="game" hidden>
   <div id="left">
     <div id="rompick" class="card">
-      <div id="romsaved" hidden><button id="rom-use" class="btn"><span data-i18n="emu.useSaved">▶ Jouer avec ma ROM enregistrée</span> <small id="rom-use-name"></small></button><button id="rom-forget" data-i18n="emu.forget">Oublier</button></div>
-      <input id="rom" type="file" accept=".nds">
-      <label id="romkeep-l"><input id="romkeep" type="checkbox" checked> <span data-i18n="emu.keep">Retenir ma ROM sur cet appareil (elle reste dans ton navigateur, rien n'est envoyé)</span></label>
-      <div id="emustat" data-i18n="emu.pickRom">Choisis ta ROM SoulSilver (.nds) pour démarrer.</div>
+      <div id="romsaved" class="romcart" hidden>
+        <span id="rom-cart-ico" class="cart-ico"></span>
+        <span class="cart-info"><b id="rom-use-name">SoulSilver</b><small data-i18n="emu.savedHere">Enregistrée sur cet appareil</small></span>
+        <button id="rom-use" class="btn" data-i18n="emu.play">▶ Jouer</button>
+        <button id="rom-forget" data-i18n-title="emu.forgetTitle" title="Oublier cette ROM" aria-label="Oublier cette ROM">✕</button>
+      </div>
+      <label id="romdrop" class="romdrop">
+        <span class="drop-ico">💾</span>
+        <span class="drop-main main-new" data-i18n="emu.pickBtn">Choisir ma ROM</span>
+        <span class="drop-main main-other" data-i18n="emu.pickOther">📂 Choisir une autre ROM</span>
+        <span class="drop-sub" data-i18n="emu.drop">ou glisse ton fichier .nds ici</span>
+        <input id="rom" type="file" accept=".nds" hidden>
+      </label>
+      <label id="romkeep-l" class="switch"><input id="romkeep" type="checkbox" checked><span class="sw"></span><span data-i18n="emu.keepShort">Retenir ma ROM sur cet appareil</span></label>
+      <div id="emustat" data-i18n="emu.pickRom">SoulSilver ou HeartGold (.nds), FR ou EN — elle reste sur ta machine.</div>
     </div>
     <div id="emuwrap"><canvas id="top-screen" width="256" height="192"></canvas><canvas id="bottom-screen" width="256" height="192"></canvas></div>
     <div id="pad" hidden>
@@ -383,7 +421,8 @@
   <div id="right">
     <!-- SALON (phase lobby) -->
     <div id="lobby" hidden>
-      <h2><span data-i18n="lobby.roomWord">Salon</span> « <span id="lobby-room">–</span> »</h2>
+      <h2 class="room-title"><span data-i18n="lobby.roomWord">Salon</span> « <span id="lobby-room">–</span> »</h2>
+      <h2 class="solo-title" data-i18n="lobby.soloTitle">🎮 Partie solo</h2>
       <div id="lobby-cfg"></div>
       <div id="lobby-players"></div>
       <div id="lobby-host" hidden>
@@ -391,7 +430,7 @@
         <p id="start-hint" class="sub"></p>
       </div>
       <p id="lobby-wait" class="sub" data-i18n="lobby.waitDefault" hidden>⏳ En attente que le meneur lance la partie…</p>
-      <p class="sub" data-i18n="lobby.note">Charge ta ROM à gauche et balade-toi en attendant. Le meneur lance quand tout le monde est prêt.</p>
+      <p id="lobby-note" class="sub" data-i18n="lobby.note">Charge ta ROM à gauche et balade-toi en attendant. Le meneur lance quand tout le monde est prêt.</p>
     </div>
     <!-- PANNEAUX DE JEU (phase playing/intermission) -->
     <div id="game-panels" hidden style="display:flex;flex-direction:column;gap:10px">
@@ -475,16 +514,18 @@ const I18N = {
     'emu.badRom':'⚠️ Version non reconnue. Utilise Pokémon SoulSilver ou HeartGold (français ou anglais).',
     'about.link':'À propos','about.title':'À propos de PokéGeoGuessr',
     'about.body':'Un GeoGuessr multijoueur jouable directement dans Pokémon SoulSilver / HeartGold : trouve le lieu montré et amène ton perso sur place, le premier arrivé gagne.\n\nProjet de fan créé par Taykaro, non affilié à Nintendo, Game Freak ou The Pokémon Company. Aucune ROM n\'est fournie ni distribuée — chaque joueur utilise la sienne. Émulation dans le navigateur via melonDS (WebMelon).',
-    'emu.pickRom':'Choisis ta ROM SoulSilver (.nds) pour démarrer.',
+    'emu.pickRom':'SoulSilver ou HeartGold (.nds), FR ou EN — elle reste sur ta machine.',
     'emu.loading':'⏳ Chargement de l\'émulateur…','emu.launched':'✅ Émulateur lancé — fais Continuer dans le jeu',
     'emu.inGame':'⏳ En jeu ? Fais Continuer et marche…','emu.pos':'✅ Ta position : map {map} — ({x}, {y})',
-    'emu.useSaved':'▶ Jouer avec ma ROM enregistrée','emu.forget':'Oublier',
-    'emu.keep':'Retenir ma ROM sur cet appareil (elle reste dans ton navigateur, rien n\'est envoyé)',
+    'emu.play':'▶ Jouer','emu.savedHere':'Enregistrée sur cet appareil','emu.forgetTitle':'Oublier cette ROM',
+    'emu.pickBtn':'Choisir ma ROM','emu.pickOther':'📂 Choisir une autre ROM','emu.drop':'ou glisse ton fichier .nds ici',
+    'emu.keepShort':'Retenir ma ROM sur cet appareil',
     'emu.romGone':'Ta ROM enregistrée n\'est plus là (navigateur nettoyé ?) : choisis-la à nouveau.',
     'emu.romForgot':'ROM oubliée sur cet appareil. Choisis ta ROM (.nds) pour jouer.',
     'game.where':'Où est-ce ?','game.objective':'Objectif','game.round':'Round','game.zoom':'Zoom',
     'game.scores':'Scores','game.quit':'🏳️ Quitter',
     'lobby.start':'🚀 Lancer la partie','lobby.waitDefault':'⏳ En attente que le meneur lance la partie…',
+    'lobby.soloTitle':'🎮 Partie solo','lobby.soloReady':'✅ Prêt ! Lance la partie quand tu veux.','lobby.soloWait':'⬅️ Charge ta ROM pour pouvoir lancer la partie.',
     'lobby.note':'Charge ta ROM à gauche et balade-toi en attendant. Le meneur lance quand tout le monde est prêt.',
     'lobby.roomWord':'Salon','lobby.firstTo':'premier à {n} pts','lobby.firstToShort':'premier à {n}',
     'lobby.maxPlayers':'max {n} joueurs','lobby.private':'🔒 privé',
@@ -530,16 +571,18 @@ const I18N = {
     'emu.badRom':'⚠️ Version not recognized. Use Pokémon SoulSilver or HeartGold (French or English).',
     'about.link':'About','about.title':'About PokéGeoGuessr',
     'about.body':'A multiplayer GeoGuessr played directly inside Pokémon SoulSilver / HeartGold: find the place shown and walk your character there — first to arrive wins.\n\nA fan project by Taykaro, not affiliated with Nintendo, Game Freak or The Pokémon Company. No ROM is provided or distributed — every player uses their own. In-browser emulation via melonDS (WebMelon).',
-    'emu.pickRom':'Choose your SoulSilver ROM (.nds) to start.',
+    'emu.pickRom':'SoulSilver or HeartGold (.nds), FR or EN — it stays on your machine.',
     'emu.loading':'⏳ Loading the emulator…','emu.launched':'✅ Emulator running — pick Continue in the game',
     'emu.inGame':'⏳ In game? Pick Continue and walk…','emu.pos':'✅ Your position: map {map} — ({x}, {y})',
-    'emu.useSaved':'▶ Play with my saved ROM','emu.forget':'Forget',
-    'emu.keep':'Remember my ROM on this device (it stays in your browser, nothing is uploaded)',
+    'emu.play':'▶ Play','emu.savedHere':'Saved on this device','emu.forgetTitle':'Forget this ROM',
+    'emu.pickBtn':'Choose my ROM','emu.pickOther':'📂 Choose another ROM','emu.drop':'or drop your .nds file here',
+    'emu.keepShort':'Remember my ROM on this device',
     'emu.romGone':'Your saved ROM is gone (browser data cleared?): please pick it again.',
     'emu.romForgot':'ROM forgotten on this device. Pick your ROM (.nds) to play.',
     'game.where':'Where is it?','game.objective':'Target','game.round':'Round','game.zoom':'Zoom',
     'game.scores':'Scores','game.quit':'🏳️ Leave',
     'lobby.start':'🚀 Start the game','lobby.waitDefault':'⏳ Waiting for the host to start…',
+    'lobby.soloTitle':'🎮 Solo game','lobby.soloReady':'✅ Ready! Start whenever you want.','lobby.soloWait':'⬅️ Load your ROM to be able to start.',
     'lobby.note':'Load your ROM on the left and walk around while waiting. The host starts when everyone is ready.',
     'lobby.roomWord':'Room','lobby.firstTo':'first to {n} pts','lobby.firstToShort':'first to {n}',
     'lobby.maxPlayers':'max {n} players','lobby.private':'🔒 private',
@@ -607,15 +650,15 @@ $('m-create').onclick = () => {
   filter = { region: $('m-region').value, type: $('m-type').value, difficulty: $('m-diff').value };
   socket.emit('room:create', { name: myName, room: rm, filter, maxPlayers: +$('m-max').value, password: $('m-pass').value.trim() }, onEntered);
 };
-// Jouer en solo : crée un salon privé (caché de la liste) et se lance tout seul
-// dès que la ROM est chargée. Parfait pour essayer sans attendre d'autres joueurs.
-let soloMode = false, soloStarted = false;
+// Jouer en solo : crée un salon privé (caché de la liste) ; le joueur charge sa
+// ROM puis clique « Lancer la partie ». Parfait pour essayer sans attendre d'autres joueurs.
+let soloMode = false;
 $('m-solo').onclick = () => {
   myName = $('m-name').value.trim() || (LANG==='en' ? 'Player' : 'Joueur');
   const rm = 'solo-' + Math.random().toString(36).slice(2, 7);
   room = rm.toLowerCase();
   filter = { region: $('m-region').value, type: $('m-type').value, difficulty: $('m-diff').value };
-  soloMode = true; soloStarted = false;
+  soloMode = true;
   socket.emit('room:create', { name: myName, room: rm, filter, maxPlayers: 0, password: '', solo: true }, onEntered);
 };
 function joinRoom(key, locked){
@@ -678,12 +721,15 @@ function renderLobby(s){
   }
   const isHost = s.host && myName && s.host.toLowerCase() === myName.toLowerCase();
   $('lobby-host').hidden = !isHost;
-  // Solo : dès que ma ROM est chargée (je suis "en jeu"), on lance automatiquement.
-  if (soloMode && isHost && s.canStart && !soloStarted) { soloStarted = true; socket.emit('game:start'); }
+  // Solo : plus de lancement automatique, le joueur clique « Lancer la partie ».
+  // (soloMode n'est jamais remis à false : on vérifie aussi qu'on est bien dans un salon solo)
+  const solo = soloMode && String(room || '').startsWith('solo-');
+  $('lobby').classList.toggle('solo', solo);
   $('lobby-wait').hidden = !!isHost;
   if (isHost){
     $('start-btn').disabled = !s.canStart;
-    $('start-hint').textContent = s.canStart ? L('lobby.allReady') : L('lobby.waitAll');
+    $('start-hint').textContent = solo ? L(s.canStart ? 'lobby.soloReady' : 'lobby.soloWait')
+                                           : (s.canStart ? L('lobby.allReady') : L('lobby.waitAll'));
   } else {
     $('lobby-wait').textContent = L('lobby.waitHost',{host: s.host || L('lobby.theHost')});
   }
@@ -924,7 +970,15 @@ function romDb(){ return new Promise((res,rej)=>{ const r=indexedDB.open(ROMDB.n
 async function romDbDo(mode, fn){ const db=await romDb(); return new Promise((res,rej)=>{ const tx=db.transaction(ROMDB.store,mode); const q=fn(tx.objectStore(ROMDB.store)); tx.oncomplete=()=>{ db.close(); res(q.result); }; tx.onerror=tx.onabort=()=>{ db.close(); rej(tx.error); }; }); }
 const romSaved={ get:()=>romDbDo('readonly',st=>st.get(ROMDB.key)), put:(v)=>romDbDo('readwrite',st=>st.put(v,ROMDB.key)), del:()=>romDbDo('readwrite',st=>st.delete(ROMDB.key)) };
 function romLabel(code){ const reg={F:'FR',E:'US',P:'EU',D:'DE',I:'IT',S:'ES',J:'JP',K:'KR'}; return code ? (code.startsWith('IPK')?'HeartGold':'SoulSilver')+' '+(reg[code[3]]||code[3]) : ''; }
-async function showSavedRom(){ try{ const r=await romSaved.get(); if(!r||!r.blob)return; $('rom-use-name').textContent=romLabel(r.code); $('romsaved').hidden=false; }catch{} }
+async function showSavedRom(){
+  try{
+    const r=await romSaved.get(); if(!r||!r.blob)return;
+    $('rom-use-name').textContent=romLabel(r.code);
+    $('rom-cart-ico').classList.toggle('hg', String(r.code).startsWith('IPK'));  // cartouche dorée pour HeartGold
+    $('romsaved').hidden=false; $('romdrop').classList.add('compact');
+  }catch{}
+}
+function romBusy(on){ $('rom').disabled=on; $('rom-use').disabled=on; $('romdrop').classList.toggle('busy', on); }
 async function rememberRom(code){
   try{
     if(navigator.storage&&navigator.storage.persist) navigator.storage.persist().catch(()=>{});  // évite l'effacement auto
@@ -935,7 +989,7 @@ showSavedRom();
 
 let romData=null, romFromStore=false;
 async function startRom(bytes, fromStore){
-  romData=bytes; romFromStore=fromStore; $('rom').disabled=true; $('rom-use').disabled=true;
+  romData=bytes; romFromStore=fromStore; romBusy(true);
   $('emustat').textContent=L('emu.loading');
   try{
     // webmelon.js AVANT wasmemulator.js (une seule fois) : il définit window.Module
@@ -945,20 +999,23 @@ async function startRom(bytes, fromStore){
     if(!window.WebMelon){ await loadScript('/dsa/webmelon.js'); await loadScript('/dsa/wasmemulator.js'); }
     WebMelon.assembly.addLoadListener(boot);
   }
-  catch(e){ $('emustat').textContent='⚠️ '+e.message; }
+  catch(e){ $('emustat').textContent='⚠️ '+e.message; romBusy(false); }
 }
-$('rom').addEventListener('change', async (ev)=>{
-  const f=ev.target.files[0]; if(!f)return;
-  startRom(new Uint8Array(await f.arrayBuffer()), false);
-});
+async function startRomFile(f){ if(f) startRom(new Uint8Array(await f.arrayBuffer()), false); }
+$('rom').addEventListener('change', (ev)=>startRomFile(ev.target.files[0]));
+// Glisser-déposer du fichier .nds sur la zone
+const drop=$('romdrop');
+drop.addEventListener('dragover', (e)=>{ e.preventDefault(); drop.classList.add('over'); });
+drop.addEventListener('dragleave', ()=>drop.classList.remove('over'));
+drop.addEventListener('drop', (e)=>{ e.preventDefault(); drop.classList.remove('over'); if(!$('rom').disabled) startRomFile(e.dataTransfer.files[0]); });
 $('rom-use').onclick=async ()=>{
-  $('rom-use').disabled=true;
+  romBusy(true);
   try{ const r=await romSaved.get(); if(r&&r.blob) return startRom(new Uint8Array(await r.blob.arrayBuffer()), true); }catch{}
-  $('romsaved').hidden=true; $('rom-use').disabled=false; $('emustat').textContent=L('emu.romGone');
+  romBusy(false); $('romsaved').hidden=true; $('romdrop').classList.remove('compact'); $('emustat').textContent=L('emu.romGone');
 };
 $('rom-forget').onclick=async ()=>{
   try{ await romSaved.del(); }catch{}
-  $('romsaved').hidden=true; $('emustat').textContent=L('emu.romForgot');
+  $('romsaved').hidden=true; $('romdrop').classList.remove('compact'); $('emustat').textContent=L('emu.romForgot');
 };
 function boot(){
   WebMelon.storage.onPrepare(async ()=>{
@@ -966,7 +1023,7 @@ function boot(){
       WebMelon.storage.createDirectory('/roms'); WebMelon.storage.write('/roms/game.nds', romData);
       WebMelon.cart.createCart(); WebMelon.cart.loadFileIntoCart('/roms/game.nds');
       const code=WebMelon.cart.getUnloadedCartCode();
-      if(!/^IP[GK]/.test(code||'')){ $('emustat').textContent=L('emu.badRom'); $('rom').disabled=false; $('rom-use').disabled=false; return; }
+      if(!/^IP[GK]/.test(code||'')){ $('emustat').textContent=L('emu.badRom'); romBusy(false); return; }
       const save=new Uint8Array(await (await fetch('/dsa/IPGF.sav')).arrayBuffer());
       WebMelon.storage.write('/savefiles/'+code+'.sav', save);
       WebMelon.emulator.createEmulator(); WebMelon.emulator.setSavePath('/savefiles/'+code+'.sav');
@@ -977,7 +1034,8 @@ function boot(){
       // ROM valide : on la retient si le joueur l'a demandé (après le démarrage,
       // pour ne pas ralentir le boot avec la copie de ~128 Mo)
       if(!romFromStore && $('romkeep').checked) setTimeout(()=>rememberRom(code), 3000);
-      if(romFromStore||$('romkeep').checked) $('romkeep-l').hidden=true;
+      // Jeu lancé : on range le sélecteur, il ne reste que l'état (position…)
+      $('romsaved').hidden=true; $('romdrop').hidden=true; $('romkeep-l').hidden=true;
       applyKeybinds(); updatePad();   // touches perso + affiche la manette tactile
       startPolling();
     }catch(e){ $('emustat').textContent='⚠️ boot: '+e.message; }
