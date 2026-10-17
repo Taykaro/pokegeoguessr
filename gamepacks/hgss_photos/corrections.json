@@ -2,7 +2,7 @@
  "_doc": [
   "Corrections appliquées par server/pack.js au chargement (survivent à une reconstruction de pack.json).",
   "doorFallbacks : portes overworld des intérieurs atteints seulement par script (sans warp) -> jauge chaud/froid.",
-  "excludeZones : photos de lieux impossibles à atteindre/gagner avec la version FR + la sauvegarde fournie."
+  "excludeZones : photos de lieux impossibles à atteindre/gagner avec la version FR + la sauvegarde fournie (Sinjoh est atteignable : Arceus d'événement en équipe dans la sauvegarde)."
  ],
  "doorFallbacks": {
   "190": {
@@ -77,6 +77,24 @@
    "map": "SAFFRON_SILPH_CO_ROTOM_ROOM",
    "via": "SAFFRON_SILPH_CO_HQ"
   },
+  "521": {
+   "gx": 441,
+   "gy": 314,
+   "map": "SINJOH_RUINS_EXTERIOR",
+   "via": "case de l'événement Arceus, devant le centre de recherche des Ruines d'Alpha"
+  },
+  "522": {
+   "gx": 441,
+   "gy": 314,
+   "map": "SINJOH_RUINS_MYSTRI_STAGE",
+   "via": "case de l'événement Arceus, devant le centre de recherche des Ruines d'Alpha"
+  },
+  "523": {
+   "gx": 441,
+   "gy": 314,
+   "map": "SINJOH_RUINS_CABIN",
+   "via": "case de l'événement Arceus, devant le centre de recherche des Ruines d'Alpha"
+  },
   "539": {
    "gx": 919,
    "gy": 228,
@@ -87,12 +105,6 @@
  "excludeZones": {
   "GOLDENROD_GAME_CORNER_JP": "carte de la version japonaise uniquement",
   "CELADON_GAME_CORNER_JP": "carte de la version japonaise uniquement",
-  "ROUTE_10_POWER_PLANT_BROKEN": "la sauvegarde a la centrale réparée",
-  "SINJOH_RUINS_MYSTRI_STAGE": "événement Arceus (en attente de l'Arceus dans la sauvegarde)",
-  "SINJOH_RUINS_EXTERIOR": "événement Arceus (en attente de l'Arceus dans la sauvegarde)",
-  "SINJOH_RUINS_CABIN": "événement Arceus (en attente de l'Arceus dans la sauvegarde)",
-  "RUINS_OF_ALPH_HALL_ENTRANCE_SINJOH_EVENT": "variante des Ruines d'Alpha pendant l'événement Arceus (en attente de l'Arceus dans la sauvegarde)",
-  "RUINS_OF_ALPH_UNDERGROUND_HALL_SINJOH_EVENT": "variante des Ruines d'Alpha pendant l'événement Arceus (en attente de l'Arceus dans la sauvegarde)",
-  "RUINS_OF_ALPH_UNDERGROUND_HALL_SINJOH_EVENT_2": "variante des Ruines d'Alpha pendant l'événement Arceus (en attente de l'Arceus dans la sauvegarde)"
+  "ROUTE_10_POWER_PLANT_BROKEN": "la sauvegarde a la centrale réparée"
  }
 }
