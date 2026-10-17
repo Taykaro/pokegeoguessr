@@ -50,7 +50,7 @@ sauvegarde, puis déplace-toi pour trouver le lieu.
   la map » (pour tes tests).
 
 ## Réglages (`config.json`)
-- `zoomIntervalSec` : temps entre deux dézooms (défaut 300 s). Baisse-le pour des
+- `zoomIntervalSec` : temps entre deux dézooms (défaut 120 s). Baisse-le pour des
   rounds plus rapides.
 - `marginTiles` : tolérance de position pour gagner (défaut 3 tuiles).
 

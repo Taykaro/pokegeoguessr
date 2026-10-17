@@ -1,7 +1,7 @@
 {
   "port": 3000,
   "pack": "hgss_photos",
-  "zoomIntervalSec": 300,
+  "zoomIntervalSec": 120,
   "intermissionSec": 8,
   "marginTiles": 3,
   "winScore": 10,
