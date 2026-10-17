@@ -335,6 +335,62 @@
   @media (max-width:700px){ #acct-prompt{ top:54px; left:10px; right:10px; max-width:none; } #acct-prompt::before{ display:none; } }
   #acct-prompt #acct-prompt-x{ position:absolute; top:1px; right:6px; background:none; border:none; cursor:pointer; color:var(--line); font-size:14px; }
   @keyframes bob{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-6px); } }
+
+  /* ---- Accueil : menu façon jeu Pokémon ---- */
+  #menu{ max-width:1000px; width:calc(100% - 32px); box-sizing:border-box; margin:3vh auto 2vh; padding:26px 30px 30px; }
+  @media (min-width:780px){
+    #menu{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:34px; align-items:stretch; }
+    #menu .m-right{ display:flex; flex-direction:column; }
+    #room-list{ flex:1; max-height:min(62vh,560px); min-height:280px; }
+  }
+  @media (max-width:779px){ #menu{ padding:20px 16px 22px; } #menu .m-right{ margin-top:26px; } .menu-title h2{ font-size:26px; } }
+  .menu-title{ display:flex; align-items:center; gap:13px; }
+  .menu-title .pball{ width:36px; height:36px; }
+  .menu-title h2{ margin:0; font-family:var(--disp); font-size:31px; line-height:1; color:var(--line2); letter-spacing:.4px; }
+  .menu-title p{ margin:5px 0 0; font-family:var(--disp); font-size:15px; color:var(--ink2); }
+  #menu .howbox{ margin:18px 0 2px; } #menu .howbox summary{ font-size:15px; }
+  #menu label{ font-size:15px; margin:16px 0 6px; }
+  #menu input, #menu select{ font-size:17px; padding:13px 14px; border-radius:11px; }
+  /* lignes d'action (curseur ▶ au survol, comme dans le jeu) */
+  .act-list{ display:flex; flex-direction:column; gap:12px; margin-top:20px; }
+  #menu .act{ all:unset; box-sizing:border-box; position:relative; display:flex; align-items:center; gap:14px; width:100%; cursor:pointer;
+    padding:11px 40px 11px 11px; background:var(--paper); border:3px solid var(--line); border-radius:14px; box-shadow:0 4px 0 var(--line2);
+    transition:transform .1s, box-shadow .1s, background .15s; }
+  #menu .act:hover{ transform:translateY(-2px); box-shadow:0 6px 0 var(--line2); background:#fff; }
+  #menu .act:active{ transform:translateY(2px); box-shadow:0 2px 0 var(--line2); }
+  #menu .act:focus-visible{ outline:3px solid var(--gold); outline-offset:2px; }
+  #menu .act::after{ content:'▶'; position:absolute; right:18px; top:50%; transform:translateY(-50%); font-size:14px; color:var(--line); opacity:0; transition:opacity .12s, right .12s; }
+  #menu .act:hover::after, #menu .act:focus-visible::after{ opacity:1; right:14px; }
+  .act-ico{ flex:none; display:grid; place-items:center; width:50px; height:50px; font-size:25px; border-radius:11px; background:var(--cream); border:2px solid var(--cream2); }
+  .act-txt{ display:flex; flex-direction:column; gap:3px; min-width:0; }
+  .act-txt b{ font-family:var(--disp); font-weight:700; font-size:20px; color:var(--ink); }
+  .act-txt small{ font-size:13.5px; color:var(--ink2); }
+  #menu .act-solo{ background:var(--green); border-color:var(--greend); box-shadow:0 4px 0 #2f6427; }
+  #menu .act-solo:hover{ background:#64b453; box-shadow:0 6px 0 #2f6427; }
+  #menu .act-solo:active{ box-shadow:0 2px 0 #2f6427; }
+  #menu .act-solo .act-txt b{ color:#fff; } #menu .act-solo .act-txt small{ color:#eaf7e4; }
+  #menu .act-solo .act-ico{ background:rgba(255,255,255,.2); border-color:rgba(255,255,255,.45); }
+  #menu .act-solo::after{ color:#fff; }
+  /* « Créer un salon » : même ligne de menu ; le formulaire se déplie dessous */
+  #createbox{ margin:0; padding:0; background:none; border:0; }
+  #createbox > summary{ list-style:none; } #createbox > summary::-webkit-details-marker{ display:none; }
+  #createbox > summary::before{ display:none !important; }
+  #createbox[open] > summary.act{ border-radius:14px 14px 0 0; border-bottom:2px dashed var(--cream2); box-shadow:none; transform:none; background:#fff; }
+  #createbox[open] > summary.act::after{ content:'▼'; opacity:1; right:15px; font-size:12px; }
+  .create-form{ background:#fff; border:3px solid var(--line); border-top:0; border-radius:0 0 14px 14px; padding:2px 16px 16px; box-shadow:0 4px 0 var(--line2); }
+  #menu #m-create{ all:unset; box-sizing:border-box; display:block; width:100%; margin-top:16px; text-align:center; cursor:pointer;
+    font-family:var(--disp); font-weight:700; font-size:18px; color:#fff; background:var(--line); border-radius:11px; padding:13px; box-shadow:0 4px 0 var(--line2); }
+  #menu #m-create:hover{ background:#4a6ca8; } #menu #m-create:active{ transform:translateY(2px); box-shadow:0 2px 0 var(--line2); }
+  /* colonne des salons */
+  #menu .m-right .m-sec{ font-size:19px; margin-top:0; }
+  .room-row{ padding:13px 14px; border-radius:13px; }
+  .rr-name{ font-size:20px; }
+  .rr-badge{ font-size:12.5px; padding:3px 9px; }
+  #room-list .rr-join{ font-size:16px; padding:10px 18px; border-radius:10px; }
+  #room-list:has(.m-empty){ justify-content:center; background:var(--paper); border:2px dashed var(--cream2); border-radius:14px; }
+  .m-empty{ font-family:var(--disp); font-size:16px; padding:26px 18px; }
+  .m-empty::before{ content:'🏠'; display:block; font-size:40px; margin-bottom:10px; }
+  .discord-cta{ padding:14px 16px; margin-top:18px; } .discord-cta svg{ width:34px; } .discord-cta b{ font-size:18px; } .discord-cta small{ font-size:13.5px; }
 </style>
 </head>
 <body>
@@ -347,53 +403,55 @@
 
 <!-- MENU -->
 <div id="menu" class="card">
-  <p class="sub" data-i18n="menu.tagline" style="font-family:var(--disp);font-size:15px;color:var(--line2);margin-top:2px">Un GeoGuessr dans Pokémon SoulSilver</p>
-
-  <details id="howto" class="howbox">
-    <summary data-i18n="how.title">Comment ça marche</summary>
-    <p class="how-need" data-i18n="how.need">Il te faut ta propre cartouche Pokémon SoulSilver ou HeartGold (.nds).</p>
-    <ol class="how-steps">
-      <li data-i18n="how.s1">Charge ta ROM (elle reste sur ta machine).</li>
-      <li data-i18n="how.s2">Une photo d'un lieu s'affiche et se dézoome.</li>
-      <li data-i18n="how.s3">Amène ton perso sur ce lieu — le 1er arrivé gagne !</li>
-    </ol>
-  </details>
-
-  <label data-i18n="menu.nick">Ton pseudo</label>
-  <input id="m-name" maxlength="20" data-i18n-ph="menu.nickPh" placeholder="Ex : Léo">
-  <div class="top-actions">
-    <button id="m-solo" data-i18n="menu.solo">🎮 Jouer en solo</button>
-    <button id="m-demo" data-i18n="demo.btn">👁️ Voir une démo</button>
+  <div class="m-left">
+    <div class="menu-title"><span class="pball spin"></span><div><h2>PokéGeoGuessr</h2><p data-i18n="menu.tagline">Un GeoGuessr dans Pokémon SoulSilver</p></div></div>
+    <details id="howto" class="howbox">
+      <summary data-i18n="how.title">Comment ça marche</summary>
+      <p class="how-need" data-i18n="how.need">Il te faut ta propre cartouche Pokémon SoulSilver ou HeartGold (.nds).</p>
+      <ol class="how-steps">
+        <li data-i18n="how.s1">Charge ta ROM (elle reste sur ta machine).</li>
+        <li data-i18n="how.s2">Une photo d'un lieu s'affiche et se dézoome.</li>
+        <li data-i18n="how.s3">Amène ton perso sur ce lieu — le 1er arrivé gagne !</li>
+      </ol>
+    </details>
+    <label data-i18n="menu.nick">Ton pseudo</label>
+    <input id="m-name" maxlength="20" data-i18n-ph="menu.nickPh" placeholder="Ex : Léo">
+    <div class="act-list">
+      <button id="m-solo" class="act act-solo"><span class="act-ico">🎮</span><span class="act-txt"><b data-i18n="act.solo">Jouer en solo</b><small data-i18n="act.soloSub">Une partie rien que pour toi</small></span></button>
+      <details id="createbox" class="createbox">
+        <summary class="act act-create"><span class="act-ico">🏠</span><span class="act-txt"><b data-i18n="act.create">Créer un salon</b><small data-i18n="act.createSub">Joue avec tes potes, en privé ou en public</small></span></summary>
+        <div class="create-form">
+            <input id="m-room" maxlength="20" data-i18n-ph="menu.roomPh" placeholder="Nom du salon (ex : soirée)">
+            <div class="row">
+              <div><label data-i18n="menu.region">Région</label><select id="m-region"><option value="all" data-i18n="opt.all">Tout</option><option value="johto">Johto</option><option value="kanto">Kanto</option></select></div>
+              <div><label data-i18n="menu.type">Lieux</label><select id="m-type"><option value="all" data-i18n="type.all">Tous</option><option value="ext" data-i18n="type.ext">Extérieurs</option><option value="int" data-i18n="type.int">Intérieurs</option></select></div>
+            </div>
+            <label data-i18n="menu.diff">Difficulté</label>
+            <select id="m-diff">
+              <option value="facile" data-i18n="diff.facileOpt">Facile — jauge en direct</option>
+              <option value="moyen" selected data-i18n="diff.moyenOpt">Moyen — jauge à chaque dézoom</option>
+              <option value="difficile" data-i18n="diff.difficileOpt">Difficile — aucune jauge</option>
+            </select>
+            <div class="row">
+              <div><label data-i18n="menu.maxp">Joueurs max</label><select id="m-max">
+                <option value="0" data-i18n="menu.unlimited">Illimité</option><option value="2">2</option><option value="3">3</option>
+                <option value="4">4</option><option value="6" selected>6</option><option value="8">8</option>
+                <option value="10">10</option><option value="16">16</option>
+              </select></div>
+              <div><label data-i18n="menu.pass">Mot de passe (option)</label><input id="m-pass" maxlength="24" data-i18n-ph="menu.passPh" placeholder="vide = public"></div>
+            </div>
+            <button id="m-create" data-i18n="menu.createBtn">Créer le salon</button>
+            <p class="sub" data-i18n="menu.hostNote" style="margin-top:12px">Tu seras le meneur : tu lances la partie quand tout le monde a chargé sa ROM. Ta ROM SoulSilver (.nds) reste sur ta machine.</p>
+        </div>
+      </details>
+      <button id="m-demo" class="act act-demo"><span class="act-ico">👁️</span><span class="act-txt"><b data-i18n="act.demo">Voir une démo</b><small data-i18n="act.demoSub">Sans ROM, pour découvrir le jeu</small></span></button>
+    </div>
+    <a id="m-discord" class="discord-cta" href="https://discord.gg/4nJJ4c2kC3" target="_blank" rel="noopener"><svg viewBox="0 0 127.14 96.36" aria-hidden="true"><path fill="currentColor" d="M107.7 8.07A105.15 105.15 0 0 0 81.47 0a72.06 72.06 0 0 0-3.36 6.83 97.68 97.68 0 0 0-29.11 0A72.37 72.37 0 0 0 45.64 0a105.89 105.89 0 0 0-26.25 8.09C2.79 32.65-1.71 56.6.54 80.21a105.73 105.73 0 0 0 32.17 16.15 77.7 77.7 0 0 0 6.89-11.11 68.42 68.42 0 0 1-10.85-5.18c.91-.66 1.8-1.34 2.66-2a75.57 75.57 0 0 0 64.32 0c.87.71 1.76 1.39 2.66 2a68.68 68.68 0 0 1-10.87 5.19 77 77 0 0 0 6.89 11.1 105.25 105.25 0 0 0 32.19-16.14c2.64-27.38-4.51-51.11-18.9-72.15ZM42.45 65.69C36.18 65.69 31 60 31 53s5-12.74 11.43-12.74S54 46 53.89 53s-5.05 12.69-11.44 12.69Zm42.24 0C78.41 65.69 73.25 60 73.25 53s5-12.74 11.44-12.74S96.23 46 96.12 53s-5.04 12.69-11.43 12.69Z"/></svg><span><b data-i18n="dc.title">Rejoins la communauté</b><small data-i18n="dc.sub">Trouve des joueurs, partage tes clutchs, propose tes idées</small></span></a>
   </div>
-
-  <div class="m-sec" data-i18n="menu.rooms">🏠 Salons ouverts</div>
-  <div id="room-list"><p class="m-empty" data-i18n="menu.noRooms">Aucun salon pour l'instant — crées-en un ! 👇</p></div>
-
-  <details id="createbox" class="createbox">
-    <summary class="m-sec" data-i18n="menu.create">➕ Créer un salon</summary>
-    <input id="m-room" maxlength="20" data-i18n-ph="menu.roomPh" placeholder="Nom du salon (ex : soirée)">
-    <div class="row">
-      <div><label data-i18n="menu.region">Région</label><select id="m-region"><option value="all" data-i18n="opt.all">Tout</option><option value="johto">Johto</option><option value="kanto">Kanto</option></select></div>
-      <div><label data-i18n="menu.type">Lieux</label><select id="m-type"><option value="all" data-i18n="type.all">Tous</option><option value="ext" data-i18n="type.ext">Extérieurs</option><option value="int" data-i18n="type.int">Intérieurs</option></select></div>
-    </div>
-    <label data-i18n="menu.diff">Difficulté</label>
-    <select id="m-diff">
-      <option value="facile" data-i18n="diff.facileOpt">Facile — jauge en direct</option>
-      <option value="moyen" selected data-i18n="diff.moyenOpt">Moyen — jauge à chaque dézoom</option>
-      <option value="difficile" data-i18n="diff.difficileOpt">Difficile — aucune jauge</option>
-    </select>
-    <div class="row">
-      <div><label data-i18n="menu.maxp">Joueurs max</label><select id="m-max">
-        <option value="0" data-i18n="menu.unlimited">Illimité</option><option value="2">2</option><option value="3">3</option>
-        <option value="4">4</option><option value="6" selected>6</option><option value="8">8</option>
-        <option value="10">10</option><option value="16">16</option>
-      </select></div>
-      <div><label data-i18n="menu.pass">Mot de passe (option)</label><input id="m-pass" maxlength="24" data-i18n-ph="menu.passPh" placeholder="vide = public"></div>
-    </div>
-    <button id="m-create" data-i18n="menu.createBtn">Créer le salon</button>
-    <p class="sub" data-i18n="menu.hostNote" style="margin-top:12px">Tu seras le meneur : tu lances la partie quand tout le monde a chargé sa ROM. Ta ROM SoulSilver (.nds) reste sur ta machine.</p>
-  </details>
-  <a id="m-discord" class="discord-cta" href="https://discord.gg/4nJJ4c2kC3" target="_blank" rel="noopener"><svg viewBox="0 0 127.14 96.36" aria-hidden="true"><path fill="currentColor" d="M107.7 8.07A105.15 105.15 0 0 0 81.47 0a72.06 72.06 0 0 0-3.36 6.83 97.68 97.68 0 0 0-29.11 0A72.37 72.37 0 0 0 45.64 0a105.89 105.89 0 0 0-26.25 8.09C2.79 32.65-1.71 56.6.54 80.21a105.73 105.73 0 0 0 32.17 16.15 77.7 77.7 0 0 0 6.89-11.11 68.42 68.42 0 0 1-10.85-5.18c.91-.66 1.8-1.34 2.66-2a75.57 75.57 0 0 0 64.32 0c.87.71 1.76 1.39 2.66 2a68.68 68.68 0 0 1-10.87 5.19 77 77 0 0 0 6.89 11.1 105.25 105.25 0 0 0 32.19-16.14c2.64-27.38-4.51-51.11-18.9-72.15ZM42.45 65.69C36.18 65.69 31 60 31 53s5-12.74 11.43-12.74S54 46 53.89 53s-5.05 12.69-11.44 12.69Zm42.24 0C78.41 65.69 73.25 60 73.25 53s5-12.74 11.44-12.74S96.23 46 96.12 53s-5.04 12.69-11.43 12.69Z"/></svg><span><b data-i18n="dc.title">Rejoins la communauté</b><small data-i18n="dc.sub">Trouve des joueurs, partage tes clutchs, propose tes idées</small></span></a>
+  <div class="m-right">
+    <div class="m-sec" data-i18n="menu.rooms">🏠 Salons ouverts</div>
+    <div id="room-list"><p class="m-empty" data-i18n="menu.noRooms">Aucun salon pour l'instant — crées-en un ! 👇</p></div>
+  </div>
 </div>
 
 <!-- JEU -->
@@ -532,7 +590,7 @@ const I18N = {
     'set.title':'Réglages (contrôles)','sound.title':'Sons',
     'menu.tagline':'Un GeoGuessr dans Pokémon SoulSilver',
     'menu.nick':'Ton pseudo','menu.nickPh':'Ex : Léo',
-    'menu.rooms':'🏠 Salons ouverts','menu.noRooms':'Aucun salon pour l\'instant — crées-en un ! 👇',
+    'menu.rooms':'🏠 Salons ouverts','menu.noRooms':'Aucun salon pour l\'instant — crée le tien avec « ➕ Créer un salon » !',
     'menu.create':'➕ Créer un salon','menu.roomPh':'Nom du salon (ex : soirée)',
     'menu.region':'Région','menu.type':'Lieux',
     'opt.all':'Tout','type.all':'Tous','type.ext':'Extérieurs','type.int':'Intérieurs',
@@ -548,6 +606,7 @@ const I18N = {
     'how.s2':'Une photo d\'un lieu s\'affiche et se dézoome peu à peu.',
     'how.s3':'Amène ton perso sur ce lieu dans le jeu — le 1er arrivé gagne !',
     'menu.solo':'🎮 Jouer en solo',
+    'act.solo':'Jouer en solo','act.soloSub':'Une partie rien que pour toi','act.create':'Créer un salon','act.createSub':'Joue avec tes potes, en privé ou en public','act.demo':'Voir une démo','act.demoSub':'Sans ROM, pour découvrir le jeu',
     'demo.btn':'👁️ Voir une démo (sans ROM)',
     'dc.title':'Rejoins la communauté','dc.sub':'Trouve des joueurs, partage tes clutchs, propose tes idées',
     'demo.where':'Où est-ce ?','demo.close':'Fermer la démo',
@@ -597,7 +656,7 @@ const I18N = {
     'set.title':'Settings (controls)','sound.title':'Sound',
     'menu.tagline':'A GeoGuessr inside Pokémon SoulSilver',
     'menu.nick':'Your nickname','menu.nickPh':'e.g. Leo',
-    'menu.rooms':'🏠 Open rooms','menu.noRooms':'No rooms yet — create one! 👇',
+    'menu.rooms':'🏠 Open rooms','menu.noRooms':'No rooms yet — start yours with « ➕ Create a room »!',
     'menu.create':'➕ Create a room','menu.roomPh':'Room name (e.g. party)',
     'menu.region':'Region','menu.type':'Places',
     'opt.all':'All','type.all':'All','type.ext':'Outdoor','type.int':'Indoor',
@@ -613,6 +672,7 @@ const I18N = {
     'how.s2':'A photo of a place appears and slowly zooms out.',
     'how.s3':'Walk your character to that place in the game — first there wins!',
     'menu.solo':'🎮 Play solo',
+    'act.solo':'Play solo','act.soloSub':'A game just for you','act.create':'Create a room','act.createSub':'Play with friends, private or public','act.demo':'Watch a demo','act.demoSub':'No ROM needed, see how it works',
     'demo.btn':'👁️ Watch a demo (no ROM)',
     'dc.title':'Join the community','dc.sub':'Find players, share your clutches, suggest ideas',
     'demo.where':'Where is it?','demo.close':'Close demo',
