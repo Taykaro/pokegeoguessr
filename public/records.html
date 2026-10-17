@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Records — PokéGeoGuessr</title>
+<link rel="icon" type="image/png" href="/img/logo.png">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;700&display=swap');
+  :root{
+    --disp:'Pixelify Sans','Trebuchet MS',system-ui,sans-serif; --body:'Segoe UI',system-ui,sans-serif;
+    --ink:#243441; --ink2:#5f7180; --cream:#fbf4e1; --cream2:#efe4c8; --paper:#fffdf5;
+    --line:#3d5c93; --line2:#25406e; --green:#5aa64a; --gold:#f2b636;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; background:linear-gradient(#8fd0ee,#bfe6f6 55%,#dff1e6) fixed; color:var(--ink); font-family:var(--body); min-height:100%; }
+  main{ max-width:760px; margin:0 auto; padding:18px 16px 40px; }
+  header{ display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+  header img{ width:34px; height:34px; }
+  h1{ font-family:var(--disp); font-size:24px; color:#fff; text-shadow:2px 2px 0 var(--line2); margin:0; flex:1; }
+  header a{ font-family:var(--disp); color:#fff; text-decoration:none; background:var(--green); padding:8px 12px; border-radius:10px; box-shadow:0 3px 0 #3f7f34; white-space:nowrap; }
+  .card{ background:var(--cream); border:3px solid var(--line); border-radius:14px; box-shadow:0 4px 0 var(--line2), 0 10px 22px rgba(20,45,35,.22); padding:14px 16px; margin-bottom:16px; }
+  h2{ font-family:var(--disp); font-size:18px; color:var(--line2); margin:0 0 10px; }
+  .totals{ display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px; }
+  .tot{ background:var(--paper); border:2px solid var(--cream2); border-radius:10px; padding:10px; text-align:center; }
+  .tot b{ display:block; font-family:var(--disp); font-size:26px; color:var(--line); font-variant-numeric:tabular-nums; }
+  .tot span{ font-size:12px; color:var(--ink2); }
+  table{ width:100%; border-collapse:collapse; font-size:14px; }
+  th{ text-align:left; font-size:12px; color:var(--ink2); font-weight:600; padding:4px 6px; border-bottom:2px solid var(--cream2); }
+  th:last-child{ text-align:right; }
+  td{ padding:6px; border-bottom:1px solid var(--cream2); }
+  td.n{ text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  td.rk{ width:2.2em; font-family:var(--disp); color:var(--line); }
+  tr:nth-child(1) td.rk{ color:var(--gold); }
+  .empty{ color:var(--ink2); font-style:italic; }
+  .wrap{ overflow-x:auto; }
+</style>
+</head>
+<body>
+<main>
+  <header><img src="/img/logo.png" alt=""><h1 data-t="title">🏆 Records</h1><a href="/play.html" data-t="play">🎮 Jouer</a></header>
+  <section class="card"><h2 data-t="totals">En chiffres</h2><div class="totals" id="totals"></div></section>
+  <section class="card"><h2 data-t="fastest">⚡ Les plus rapides</h2><div class="wrap" id="fastest"></div></section>
+  <section class="card"><h2 data-t="latest">🆕 Derniers records battus</h2><div class="wrap" id="latest"></div></section>
+  <section class="card"><h2 data-t="popular">🗺️ Lieux les plus joués</h2><div class="wrap" id="popular"></div></section>
+</main>
+<script>
+const LANG = (()=>{ try{ return localStorage.getItem('pg_lang')==='en' ? 'en' : 'fr'; }catch{ return 'fr'; } })();
+const T = {
+  fr:{ title:'🏆 Records', play:'🎮 Jouer', totals:'En chiffres', fastest:'⚡ Les plus rapides', latest:'🆕 Derniers records battus', popular:'🗺️ Lieux les plus joués',
+       rounds:'manches jouées', finds:'lieux trouvés', games:'parties terminées', records:'lieux avec un record',
+       place:'Lieu', player:'Joueur', time:'Temps', when:'Quand', plays:'Manches', none:'Pas encore de record — à toi de jouer !' },
+  en:{ title:'🏆 Records', play:'🎮 Play', totals:'By the numbers', fastest:'⚡ Fastest finds', latest:'🆕 Latest records', popular:'🗺️ Most played places',
+       rounds:'rounds played', finds:'places found', games:'games finished', records:'places with a record',
+       place:'Place', player:'Player', time:'Time', when:'When', plays:'Rounds', none:'No record yet — go set one!' },
+}[LANG];
+document.documentElement.lang = LANG;
+for (const el of document.querySelectorAll('[data-t]')) el.textContent = T[el.dataset.t];
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const zone = z => esc(String(z).toLowerCase().replace(/_/g,' ').replace(/\b\w/g, c => c.toUpperCase()));
+const time = ms => { const s = ms/1000; return s < 60 ? s.toFixed(1)+' s' : Math.floor(s/60)+':'+String(Math.round(s%60)).padStart(2,'0'); };
+const date = iso => new Date(iso).toLocaleDateString(LANG==='en'?'en-GB':'fr-FR', { day:'numeric', month:'short' });
+function table(rows, cols){
+  if (!rows.length) return '<p class="empty">'+T.none+'</p>';
+  return '<table><thead><tr>'+cols.map(c=>'<th>'+c[0]+'</th>').join('')+'</tr></thead><tbody>'+
+    rows.map((r,i)=>'<tr>'+cols.map(c=>c[1](r,i)).join('')+'</tr>').join('')+'</tbody></table>';
+}
+fetch('/api/records').then(r=>r.json()).then(d=>{
+  document.getElementById('totals').innerHTML = [['rounds',d.rounds],['finds',d.finds],['games',d.games],['records',d.recordsCount]]
+    .map(([k,v])=>'<div class="tot"><b>'+v+'</b><span>'+T[k]+'</span></div>').join('');
+  document.getElementById('fastest').innerHTML = table(d.fastest, [
+    ['#', (r,i)=>'<td class="rk">'+(i+1)+'</td>'], [T.place, r=>'<td>'+zone(r.zone)+'</td>'], [T.player, r=>'<td>'+esc(r.by)+'</td>'], [T.time, r=>'<td class="n">'+time(r.ms)+'</td>']]);
+  document.getElementById('latest').innerHTML = table(d.latest, [
+    [T.when, r=>'<td>'+date(r.at)+'</td>'], [T.place, r=>'<td>'+zone(r.zone)+'</td>'], [T.player, r=>'<td>'+esc(r.by)+'</td>'], [T.time, r=>'<td class="n">'+time(r.ms)+'</td>']]);
+  document.getElementById('popular').innerHTML = table(d.popular, [
+    ['#', (r,i)=>'<td class="rk">'+(i+1)+'</td>'], [T.place, r=>'<td>'+zone(r.zone)+'</td>'], [T.plays, r=>'<td class="n">'+r.n+'</td>']]);
+}).catch(()=>{ document.getElementById('fastest').innerHTML='<p class="empty">⚠️</p>'; });
+</script>
+</body>
+</html>

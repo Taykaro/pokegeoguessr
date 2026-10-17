@@ -99,6 +99,7 @@
   .pill.lost { --c:#ef5350; } .pill.region { --c:#4a90e2; } .pill.warm { --c:#f2c037; }
   .pill.goat { --c:#b57bff; border-color:#6a3fb0; box-shadow:0 0 14px rgba(160,108,240,.28); }
   .pill.goat .pill-ball { animation:bob 1.6s ease-in-out infinite; }
+  .rec-line { font-size:13px; margin-top:4px; opacity:.9; } .rec-line.new { color:var(--gold, #d4a017); font-weight:700; opacity:1; }
   .pill-none { padding:8px 10px; border-radius:12px; font-size:12px; color:var(--ink2); background:var(--cream); border:2px dashed var(--cream2); text-align:center; }
   @keyframes bob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-2px)} }
   .btns { display:flex; gap:8px; }
@@ -482,7 +483,7 @@
   <div class="btns"><button id="about-close" class="btn" data-i18n="set.close">Fermer</button></div>
 </div></div>
 
-<footer id="site-foot"><span data-i18n="foot.disclaimer">Projet de fan non affilié à Nintendo, Game Freak ou The Pokémon Company. Aucune ROM n'est fournie ni distribuée — chaque joueur utilise la sienne.</span> · <button id="about-link" class="about-link" data-i18n="about.link">À propos</button></footer>
+<footer id="site-foot"><span data-i18n="foot.disclaimer">Projet de fan non affilié à Nintendo, Game Freak ou The Pokémon Company. Aucune ROM n'est fournie ni distribuée — chaque joueur utilise la sienne.</span> · <button id="about-link" class="about-link" data-i18n="about.link">À propos</button> · <a class="about-link" href="/records.html" data-i18n="rec.link">🏆 Records</a></footer>
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
@@ -544,6 +545,7 @@ const I18N = {
     'clutch.mine':'✅ Trouvé <b>+{pts}</b> — en attente des autres… <b>{t}</b>','clutch.other':'🎉 <b>{name}</b> a trouvé ! Rejoins-le vite — <b>{t}</b>',
     'cd.zoomMax':'zoom max','cd.zoomout':'dézoom {t}',
     'over.winner':'Victoire de <b>{winner}</b> !','over.newGame':'Nouvelle partie dans {sec}s…',
+    'rec.link':'🏆 Records','rec.new':'🏆 Nouveau record pour ce lieu : {by} en {t} !','rec.line':'⚡ Record de ce lieu : {by} en {t}',
     'won.clutchExtra':' · +{n} au clutch','won.head':'🏁 {winner} +{pts}{extra}','won.nobody':'🏁 personne n\'a trouvé','reveal.target':'cible',
     'diff.facile':'Facile','diff.moyen':'Moyen','diff.difficile':'Difficile','region.all':'Johto + Kanto',
     'btn.up':'Haut ▲','btn.down':'Bas ▼','btn.left':'Gauche ◀','btn.right':'Droite ▶','btn.x':'X (menu)',
@@ -602,6 +604,7 @@ const I18N = {
     'clutch.mine':'✅ Found <b>+{pts}</b> — waiting for others… <b>{t}</b>','clutch.other':'🎉 <b>{name}</b> found it! Hurry — <b>{t}</b>',
     'cd.zoomMax':'max zoom','cd.zoomout':'zoom-out {t}',
     'over.winner':'<b>{winner}</b> wins!','over.newGame':'New game in {sec}s…',
+    'rec.link':'🏆 Records','rec.new':'🏆 New record for this place: {by} in {t}!','rec.line':'⚡ Record for this place: {by} in {t}',
     'won.clutchExtra':' · +{n} on clutch','won.head':'🏁 {winner} +{pts}{extra}','won.nobody':'🏁 nobody found it','reveal.target':'target',
     'diff.facile':'Easy','diff.moyen':'Medium','diff.difficile':'Hard','region.all':'Johto + Kanto',
     'btn.up':'Up ▲','btn.down':'Down ▼','btn.left':'Left ◀','btn.right':'Right ▶','btn.x':'X (menu)',
@@ -861,7 +864,10 @@ socket.on('round:won', (d)=>{
   const b=$('banner'); const found=d.found||[];
   const extra = found.length>1 ? L('won.clutchExtra',{n:found.length-1}) : '';
   const head = found.length ? L('won.head',{winner:esc(d.winner), pts:found[0].pts, extra}) : L('won.nobody');
-  b.innerHTML = head; b.hidden=false;
+  // record de vitesse du lieu (tous joueurs, toutes parties)
+  const r=d.record, fmt=ms=>{ const s=Math.round(ms/1000); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); };
+  const rec = r ? '<div class="rec-line'+(d.newRecord?' new':'')+'">'+L(d.newRecord?'rec.new':'rec.line',{by:esc(r.by), t:fmt(r.ms)})+'</div>' : '';
+  b.innerHTML = head + rec; b.hidden=false;
   drawReveal(d.reveal);
 });
 function drawReveal(reveal){

@@ -98,12 +98,13 @@ setInterval(() => {
 }, 30000);
 
 io.on('connection', (socket) => {
+  stats.recordVisit(io.engine.clientsCount); // page ouverte (+ pic de visiteurs simultanés)
   let joined = null; // { room, name }
   socket.emit('rooms', roomList()); // liste initiale pour le menu
 
   const enter = (r, name, admin) => {
     joined = { room: r, name, admin: !!admin };
-    stats.recordJoin();
+    stats.recordJoin(name);
     r.addPlayer(socket, name);
     if (admin) r.addAdmin(socket);
     return { ok: true, state: r.publicState(), admin: !!admin, adminKey: admin ? r.adminKey : undefined };
@@ -244,8 +245,14 @@ app.get('/simmap', (req, res) => {
 // pour ne pas exposer publiquement. Sans STATS_KEY défini -> endpoint désactivé.
 app.get('/api/stats', (req, res) => {
   if (!process.env.STATS_KEY || req.query.key !== process.env.STATS_KEY) return res.status(403).end();
-  res.json(stats.snapshot());
+  res.json(stats.snapshot({
+    visitorsOnline: io.engine.clientsCount, // pages ouvertes en ce moment (menu compris)
+    rooms: [...rooms.values()].map((r) => ({ name: r.name, solo: !!r.solo, phase: r.phase, round: r.roundNum, players: r.activePlayers().map((p) => p.name) })),
+  }));
 });
+
+// Public : records de vitesse par lieu, lieux les plus joués (page /records.html).
+app.get('/api/records', (req, res) => res.json(stats.publicRecords()));
 
 // Modération : fermer un salon à distance (ex. nom déplacé). Protégé par STATS_KEY.
 // GET /admin/close-room?key=...&room=NOM  (GET pour être cliquable depuis le navigateur)

@@ -237,6 +237,7 @@ class Room {
     stats.recordRound(this.target);
     this.crops = this.pack.roundCrops(this.target);
     this.roundStartedAt = Date.now();
+    this.roundNewRecord = null;
     this.scheduleZoom();
     this.channel().emit('round:new', this.publicState());
     const t = this.target;
@@ -445,9 +446,12 @@ class Room {
     const order = this.found.length;
     const pts = this.findPoints(order);
     player.score += pts;
-    const elapsed = Math.round((Date.now() - this.roundStartedAt) / 1000);
+    const ms = Date.now() - this.roundStartedAt;
+    const elapsed = Math.round(ms / 1000);
     this.found.push({ name: player.name, pts, order });
     this.foundNames.add(player.name.toLowerCase());
+    // record de vitesse de cette photo (annoncé à la révélation du round)
+    if (stats.recordFind(this.target, player.name, ms, order === 0).newRecord) this.roundNewRecord = player.name;
     this.channel().emit('round:found', { name: player.name, pts, first: order === 0, elapsedSec: elapsed });
     console.log(`[${this.name}] ${player.name} a trouvé en ${elapsed}s (+${pts} pts, ${order === 0 ? '1er' : 'clutch #' + order})`);
     return pts;
@@ -512,6 +516,8 @@ class Room {
       found: this.found,
       points: this.found.length ? this.found[0].pts : 0,
       elapsedSec: Math.round((Date.now() - this.roundStartedAt) / 1000),
+      record: stats.recordFor(this.target), // record de vitesse de ce lieu (tous joueurs)
+      newRecord: this.roundNewRecord,       // pseudo si le record vient d'être battu
       gameOver,
       marker: { fx, fy },
       reveal: this.buildReveal(winnerName),

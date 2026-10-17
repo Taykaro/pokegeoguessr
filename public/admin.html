@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Tableau de bord — PokéGeoGuessr</title>
+<link rel="icon" type="image/png" href="/img/logo.png">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;700&display=swap');
+  :root{
+    --disp:'Pixelify Sans','Trebuchet MS',system-ui,sans-serif; --body:'Segoe UI',system-ui,sans-serif;
+    --ink:#243441; --ink2:#5f7180; --cream:#fbf4e1; --cream2:#efe4c8; --paper:#fffdf5;
+    --line:#3d5c93; --line2:#25406e; --green:#5aa64a; --red:#e35240; --gold:#f2b636; --blue:#4a90d0;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; background:#dfeaf2; color:var(--ink); font-family:var(--body); }
+  main{ max-width:1100px; margin:0 auto; padding:16px 16px 40px; }
+  header{ display:flex; align-items:center; gap:10px; margin-bottom:14px; flex-wrap:wrap; }
+  header img{ width:30px; height:30px; }
+  h1{ font-family:var(--disp); font-size:22px; color:var(--line2); margin:0; flex:1; }
+  #upd{ font-size:12px; color:var(--ink2); }
+  button{ font:inherit; cursor:pointer; border-radius:8px; border:2px solid var(--line); background:var(--paper); color:var(--line2); padding:6px 10px; }
+  .grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:14px; }
+  .card{ background:var(--cream); border:2px solid var(--line); border-radius:12px; padding:12px 14px; }
+  .card.wide{ grid-column:1/-1; }
+  h2{ font-family:var(--disp); font-size:16px; color:var(--line2); margin:0 0 10px; }
+  .kpis{ display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:10px; }
+  .kpi{ background:var(--paper); border:2px solid var(--cream2); border-radius:10px; padding:10px; }
+  .kpi b{ display:block; font-family:var(--disp); font-size:26px; color:var(--line); font-variant-numeric:tabular-nums; }
+  .kpi span{ font-size:12px; color:var(--ink2); }
+  .kpi.live b{ color:var(--green); }
+  table{ width:100%; border-collapse:collapse; font-size:13px; }
+  th{ text-align:left; font-size:11px; color:var(--ink2); font-weight:600; padding:3px 5px; border-bottom:2px solid var(--cream2); }
+  th.n, td.n{ text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  td{ padding:5px; border-bottom:1px solid var(--cream2); }
+  .bar{ display:inline-block; height:8px; background:var(--blue); border-radius:4px; vertical-align:middle; margin-right:6px; }
+  .empty{ color:var(--ink2); font-style:italic; font-size:13px; }
+  .wrap{ overflow-x:auto; }
+  #login{ max-width:420px; margin:12vh auto; text-align:center; }
+  #login input{ width:100%; padding:10px; margin:10px 0; border:2px solid var(--line); border-radius:8px; font:inherit; }
+  #login p{ font-size:13px; color:var(--ink2); }
+  .err{ color:var(--red); }
+</style>
+</head>
+<body>
+<main>
+  <section id="login" class="card" hidden>
+    <h1>🔒 Tableau de bord</h1>
+    <p>Entre ta clé de statistiques (STATS_KEY). Elle sera gardée dans ce navigateur.</p>
+    <input id="key" type="password" autocomplete="off" placeholder="Clé">
+    <button id="go">Ouvrir</button>
+    <p id="lerr" class="err"></p>
+  </section>
+
+  <div id="dash" hidden>
+    <header><img src="/img/logo.png" alt=""><h1>📊 PokéGeoGuessr — tableau de bord</h1><span id="upd"></span><button id="logout">Oublier la clé</button></header>
+    <div class="grid">
+      <section class="card wide"><h2>En direct</h2><div class="kpis" id="live"></div><div id="rooms" style="margin-top:10px"></div></section>
+      <section class="card wide"><h2>Depuis le début</h2><div class="kpis" id="totals"></div></section>
+      <section class="card wide"><h2>Jour par jour (30 derniers jours)</h2><div class="wrap" id="days"></div></section>
+      <section class="card"><h2>😵 Lieux les plus durs (≥ 3 manches)</h2><div class="wrap" id="hardest"></div></section>
+      <section class="card"><h2>⚡ Lieux trouvés le plus vite (moyenne)</h2><div class="wrap" id="easiest"></div></section>
+      <section class="card"><h2>🏆 Records de vitesse</h2><div class="wrap" id="records"></div></section>
+      <section class="card"><h2>🗺️ Lieux les plus joués</h2><div class="wrap" id="zones"></div></section>
+    </div>
+  </div>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const zone = z => esc(String(z).toLowerCase().replace(/_/g,' ').replace(/\b\w/g, c => c.toUpperCase()));
+const sec = s => s==null ? '–' : (s < 60 ? s+' s' : Math.floor(s/60)+':'+String(s%60).padStart(2,'0'));
+const ms = m => sec(Math.round(m/1000));
+const getKey = () => { try{ return localStorage.getItem('pg_admin_key')||''; }catch{ return ''; } };
+const setKey = k => { try{ k ? localStorage.setItem('pg_admin_key',k) : localStorage.removeItem('pg_admin_key'); }catch{} };
+const kpis = list => list.map(([v,l,c])=>'<div class="kpi '+(c||'')+'"><b>'+v+'</b><span>'+l+'</span></div>').join('');
+function table(rows, cols){
+  if (!rows || !rows.length) return '<p class="empty">Pas encore de données.</p>';
+  return '<table><thead><tr>'+cols.map(c=>'<th class="'+(c[2]||'')+'">'+c[0]+'</th>').join('')+'</tr></thead><tbody>'+
+    rows.map(r=>'<tr>'+cols.map(c=>'<td class="'+(c[2]||'')+'">'+c[1](r)+'</td>').join('')+'</tr>').join('')+'</tbody></table>';
+}
+let timer = null;
+async function load(){
+  const k = getKey(); if(!k){ $('login').hidden=false; $('dash').hidden=true; return; }
+  let d;
+  try{
+    const r = await fetch('/api/stats?key='+encodeURIComponent(k));
+    if (r.status===403){ setKey(''); $('lerr').textContent='Clé refusée.'; $('login').hidden=false; $('dash').hidden=true; return; }
+    d = await r.json();
+  }catch(e){ $('upd').textContent='⚠️ serveur injoignable'; return; }
+  $('login').hidden=true; $('dash').hidden=false;
+  const L = d.live || {}, t = d.totals || {}, rooms = L.rooms || [];
+  const playing = rooms.reduce((n,r)=>n+(r.players||[]).length,0);
+  $('live').innerHTML = kpis([[L.visitorsOnline??'–','pages ouvertes','live'],[playing,'joueurs dans un salon','live'],[rooms.length,'salons ouverts','live'],
+    [d.peak && d.peak.n || 0,'record de visiteurs simultanés'+(d.peak && d.peak.at ? ' ('+new Date(d.peak.at).toLocaleDateString('fr-FR')+')':'')]]);
+  $('rooms').innerHTML = rooms.length ? table(rooms, [['Salon',r=>esc(r.solo?'(solo)':r.name)],['Phase',r=>esc(r.phase)],['Manche',r=>r.round||0,'n'],['Joueurs',r=>esc((r.players||[]).join(', ')||'–')]]) : '';
+  $('totals').innerHTML = kpis([[t.visits,'visites (pages ouvertes)'],[t.joins,'entrées en salon'],[t.roomsCreated,'salons créés'],[t.games,'parties terminées'],
+    [t.rounds,'manches jouées'],[t.finds,'lieux trouvés'],[t.rounds? Math.round(100*t.finds/t.rounds)+' %':'–','trouvailles / manche'],[t.records,'lieux avec record']]);
+  const maxV = Math.max(1, ...(d.days||[]).map(x=>x.visits));
+  $('days').innerHTML = table(d.days, [['Jour',r=>esc(r.day)],['Visites',r=>'<span class="bar" style="width:'+Math.round(80*r.visits/maxV)+'px"></span>'+r.visits],
+    ['Joueurs uniques',r=>r.players,'n'],['Entrées salon',r=>r.joins,'n'],['Salons',r=>r.rooms,'n'],['Parties',r=>r.games,'n'],['Manches',r=>r.rounds,'n'],['Trouvés',r=>r.finds,'n'],['Pic simultané',r=>r.peak,'n']]);
+  $('hardest').innerHTML = table(d.hardest, [['Lieu',r=>zone(r.zone)+(r.interior?' 🏠':'')],['Manches',r=>r.plays,'n'],['Trouvé',r=>Math.round(100*r.rate)+' %','n'],['Moy.',r=>sec(r.avgSec),'n']]);
+  $('easiest').innerHTML = table(d.easiest, [['Lieu',r=>zone(r.zone)+(r.interior?' 🏠':'')],['Trouvé',r=>r.found+'×','n'],['Moy.',r=>sec(r.avgSec),'n']]);
+  $('records').innerHTML = table(d.records, [['Lieu',r=>zone(r.zone)],['Joueur',r=>esc(r.by)],['Temps',r=>ms(r.ms),'n']]);
+  $('zones').innerHTML = table(d.topZones, [['Lieu',r=>zone(r.k)],['Manches',r=>r.v,'n']]);
+  $('upd').textContent = 'mis à jour à '+new Date().toLocaleTimeString('fr-FR')+' · données depuis le '+new Date(d.since).toLocaleDateString('fr-FR');
+}
+$('go').onclick = () => { setKey($('key').value.trim()); $('lerr').textContent=''; load(); };
+$('key').addEventListener('keydown', e => { if(e.key==='Enter') $('go').click(); });
+$('logout').onclick = () => { setKey(''); location.reload(); };
+load(); timer = setInterval(load, 30000);
+</script>
+</body>
+</html>
