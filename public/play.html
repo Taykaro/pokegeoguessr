@@ -47,6 +47,10 @@
   #rompick { margin-bottom:8px; }
   #rompick input { width:100%; box-sizing:border-box; padding:8px; background:#0f1117; color:#e8ebf0; border:1px solid #2c3444; border-radius:8px; }
   #emustat { font-size:12px; color:#8a93a6; margin-top:6px; text-align:center; }
+  #romsaved { display:flex; gap:8px; align-items:center; margin-bottom:8px; } #romsaved[hidden] { display:none; }
+  #rom-use small { opacity:.8; font-size:11px; }
+  #rom-forget { background:none; border:none; color:#8a93a6; text-decoration:underline; cursor:pointer; font-size:12px; padding:0 4px; white-space:nowrap; }
+  #romkeep-l { display:flex; gap:6px; align-items:center; justify-content:center; font-size:12px; color:#8a93a6; margin-top:6px; cursor:pointer; } #romkeep-l[hidden] { display:none; }
   #photo-wrap { position:relative; width:100%; aspect-ratio:4/3; background:#000; border-radius:10px; overflow:hidden; }
   #photo { width:100%; height:100%; object-fit:contain; image-rendering:pixelated; }
   #revealCanvas { position:absolute; inset:0; width:100%; height:100%; background:#0b0e14; }
@@ -350,7 +354,12 @@
 <!-- JEU -->
 <div id="game" hidden>
   <div id="left">
-    <div id="rompick" class="card"><input id="rom" type="file" accept=".nds"><div id="emustat" data-i18n="emu.pickRom">Choisis ta ROM SoulSilver (.nds) pour démarrer.</div></div>
+    <div id="rompick" class="card">
+      <div id="romsaved" hidden><button id="rom-use" class="btn"><span data-i18n="emu.useSaved">▶ Jouer avec ma ROM enregistrée</span> <small id="rom-use-name"></small></button><button id="rom-forget" data-i18n="emu.forget">Oublier</button></div>
+      <input id="rom" type="file" accept=".nds">
+      <label id="romkeep-l"><input id="romkeep" type="checkbox" checked> <span data-i18n="emu.keep">Retenir ma ROM sur cet appareil (elle reste dans ton navigateur, rien n'est envoyé)</span></label>
+      <div id="emustat" data-i18n="emu.pickRom">Choisis ta ROM SoulSilver (.nds) pour démarrer.</div>
+    </div>
     <div id="emuwrap"><canvas id="top-screen" width="256" height="192"></canvas><canvas id="bottom-screen" width="256" height="192"></canvas></div>
     <div id="pad" hidden>
       <div class="dpad">
@@ -469,6 +478,10 @@ const I18N = {
     'emu.pickRom':'Choisis ta ROM SoulSilver (.nds) pour démarrer.',
     'emu.loading':'⏳ Chargement de l\'émulateur…','emu.launched':'✅ Émulateur lancé — fais Continuer dans le jeu',
     'emu.inGame':'⏳ En jeu ? Fais Continuer et marche…','emu.pos':'✅ Ta position : map {map} — ({x}, {y})',
+    'emu.useSaved':'▶ Jouer avec ma ROM enregistrée','emu.forget':'Oublier',
+    'emu.keep':'Retenir ma ROM sur cet appareil (elle reste dans ton navigateur, rien n\'est envoyé)',
+    'emu.romGone':'Ta ROM enregistrée n\'est plus là (navigateur nettoyé ?) : choisis-la à nouveau.',
+    'emu.romForgot':'ROM oubliée sur cet appareil. Choisis ta ROM (.nds) pour jouer.',
     'game.where':'Où est-ce ?','game.objective':'Objectif','game.round':'Round','game.zoom':'Zoom',
     'game.scores':'Scores','game.quit':'🏳️ Quitter',
     'lobby.start':'🚀 Lancer la partie','lobby.waitDefault':'⏳ En attente que le meneur lance la partie…',
@@ -520,6 +533,10 @@ const I18N = {
     'emu.pickRom':'Choose your SoulSilver ROM (.nds) to start.',
     'emu.loading':'⏳ Loading the emulator…','emu.launched':'✅ Emulator running — pick Continue in the game',
     'emu.inGame':'⏳ In game? Pick Continue and walk…','emu.pos':'✅ Your position: map {map} — ({x}, {y})',
+    'emu.useSaved':'▶ Play with my saved ROM','emu.forget':'Forget',
+    'emu.keep':'Remember my ROM on this device (it stays in your browser, nothing is uploaded)',
+    'emu.romGone':'Your saved ROM is gone (browser data cleared?): please pick it again.',
+    'emu.romForgot':'ROM forgotten on this device. Pick your ROM (.nds) to play.',
     'game.where':'Where is it?','game.objective':'Target','game.round':'Round','game.zoom':'Zoom',
     'game.scores':'Scores','game.quit':'🏳️ Leave',
     'lobby.start':'🚀 Start the game','lobby.waitDefault':'⏳ Waiting for the host to start…',
@@ -898,21 +915,58 @@ function startPolling(){
     if(joined && key!==lastPosKey){ lastPosKey=key; socket.emit('pos',{ mapID:p.mapID??0, x:p.X, y:p.Y }); }
   }, 200);
 }
-let romData=null;
+// ---------- ROM mémorisée (comme PokeMMO : le joueur fournit SA ROM une fois) ----------
+// Stockée dans l'IndexedDB du NAVIGATEUR du joueur (base à part de celle de
+// WebMelon), jamais envoyée au serveur. Seules les ROM validées sont retenues.
+// Stockée en Blob : Chrome refuse les valeurs > ~127 Mo, or une ROM HGSS fait 128 Mo.
+const ROMDB={ name:'pokegeo-rom', store:'rom', key:'cartouche' };
+function romDb(){ return new Promise((res,rej)=>{ const r=indexedDB.open(ROMDB.name,1); r.onupgradeneeded=()=>r.result.createObjectStore(ROMDB.store); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }); }
+async function romDbDo(mode, fn){ const db=await romDb(); return new Promise((res,rej)=>{ const tx=db.transaction(ROMDB.store,mode); const q=fn(tx.objectStore(ROMDB.store)); tx.oncomplete=()=>{ db.close(); res(q.result); }; tx.onerror=tx.onabort=()=>{ db.close(); rej(tx.error); }; }); }
+const romSaved={ get:()=>romDbDo('readonly',st=>st.get(ROMDB.key)), put:(v)=>romDbDo('readwrite',st=>st.put(v,ROMDB.key)), del:()=>romDbDo('readwrite',st=>st.delete(ROMDB.key)) };
+function romLabel(code){ const reg={F:'FR',E:'US',P:'EU',D:'DE',I:'IT',S:'ES',J:'JP',K:'KR'}; return code ? (code.startsWith('IPK')?'HeartGold':'SoulSilver')+' '+(reg[code[3]]||code[3]) : ''; }
+async function showSavedRom(){ try{ const r=await romSaved.get(); if(!r||!r.blob)return; $('rom-use-name').textContent=romLabel(r.code); $('romsaved').hidden=false; }catch{} }
+async function rememberRom(code){
+  try{
+    if(navigator.storage&&navigator.storage.persist) navigator.storage.persist().catch(()=>{});  // évite l'effacement auto
+    await romSaved.put({ blob:new Blob([romData]), code, size:romData.length, savedAt:Date.now() });
+  }catch(e){ console.warn('ROM non mémorisée :', e); }
+}
+showSavedRom();
+
+let romData=null, romFromStore=false;
+async function startRom(bytes, fromStore){
+  romData=bytes; romFromStore=fromStore; $('rom').disabled=true; $('rom-use').disabled=true;
+  $('emustat').textContent=L('emu.loading');
+  try{
+    // webmelon.js AVANT wasmemulator.js (une seule fois) : il définit window.Module
+    // (onRuntimeInitialized) que l'émulateur Emscripten reprend à son chargement.
+    // Dans l'autre ordre, un wasm en cache démarrait avant webmelon.js → signal
+    // « prêt » perdu → bloqué sur « Chargement de l'émulateur… » pour les habitués.
+    if(!window.WebMelon){ await loadScript('/dsa/webmelon.js'); await loadScript('/dsa/wasmemulator.js'); }
+    WebMelon.assembly.addLoadListener(boot);
+  }
+  catch(e){ $('emustat').textContent='⚠️ '+e.message; }
+}
 $('rom').addEventListener('change', async (ev)=>{
   const f=ev.target.files[0]; if(!f)return;
-  romData=new Uint8Array(await f.arrayBuffer()); $('rom').disabled=true;
-  $('emustat').textContent=L('emu.loading');
-  try{ await loadScript('/dsa/wasmemulator.js'); await loadScript('/dsa/webmelon.js'); WebMelon.assembly.addLoadListener(boot); }
-  catch(e){ $('emustat').textContent='⚠️ '+e.message; }
+  startRom(new Uint8Array(await f.arrayBuffer()), false);
 });
+$('rom-use').onclick=async ()=>{
+  $('rom-use').disabled=true;
+  try{ const r=await romSaved.get(); if(r&&r.blob) return startRom(new Uint8Array(await r.blob.arrayBuffer()), true); }catch{}
+  $('romsaved').hidden=true; $('rom-use').disabled=false; $('emustat').textContent=L('emu.romGone');
+};
+$('rom-forget').onclick=async ()=>{
+  try{ await romSaved.del(); }catch{}
+  $('romsaved').hidden=true; $('emustat').textContent=L('emu.romForgot');
+};
 function boot(){
   WebMelon.storage.onPrepare(async ()=>{
     try{
       WebMelon.storage.createDirectory('/roms'); WebMelon.storage.write('/roms/game.nds', romData);
       WebMelon.cart.createCart(); WebMelon.cart.loadFileIntoCart('/roms/game.nds');
       const code=WebMelon.cart.getUnloadedCartCode();
-      if(!/^IP[GK]/.test(code||'')){ $('emustat').textContent=L('emu.badRom'); $('rom').disabled=false; return; }
+      if(!/^IP[GK]/.test(code||'')){ $('emustat').textContent=L('emu.badRom'); $('rom').disabled=false; $('rom-use').disabled=false; return; }
       const save=new Uint8Array(await (await fetch('/dsa/IPGF.sav')).arrayBuffer());
       WebMelon.storage.write('/savefiles/'+code+'.sav', save);
       WebMelon.emulator.createEmulator(); WebMelon.emulator.setSavePath('/savefiles/'+code+'.sav');
@@ -920,6 +974,10 @@ function boot(){
       WebMelon.emulator.startEmulation('top-screen','bottom-screen');
       setInterval(WebMelon.storage.sync, 20000);
       $('emustat').textContent=L('emu.launched');
+      // ROM valide : on la retient si le joueur l'a demandé (après le démarrage,
+      // pour ne pas ralentir le boot avec la copie de ~128 Mo)
+      if(!romFromStore && $('romkeep').checked) setTimeout(()=>rememberRom(code), 3000);
+      if(romFromStore||$('romkeep').checked) $('romkeep-l').hidden=true;
       applyKeybinds(); updatePad();   // touches perso + affiche la manette tactile
       startPolling();
     }catch(e){ $('emustat').textContent='⚠️ boot: '+e.message; }
