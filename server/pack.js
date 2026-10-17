@@ -31,11 +31,21 @@ class GamePack {
     // Porte overworld (coords RAM globales) de chaque intérieur, pour l'indice
     // chaud/froid : mapID -> { gx, gy }. Construit par tools/build-interior-doors.js.
     this.interiorDoors = cfg.interiorDoors || {};
+    // corrections.json (facultatif) : portes de secours pour les intérieurs atteints
+    // par script (Ligue, étages d'immeubles…) et lieux à exclure (impossibles à
+    // atteindre avec la version FR + la sauvegarde fournie). Fichier séparé pour
+    // survivre à une reconstruction de pack.json.
+    const fixFile = path.join(dir, 'corrections.json');
+    const fixes = fs.existsSync(fixFile) ? JSON.parse(fs.readFileSync(fixFile, 'utf8')) : {};
+    for (const [id, d] of Object.entries(fixes.doorFallbacks || {})) {
+      if (!this.interiorDoors[id]) this.interiorDoors[id] = { gx: d.gx, gy: d.gy };
+    }
+    const excluded = new Set(Object.keys(fixes.excludeZones || {}));
 
     if (this.mode === 'photo') {
       // Pack "photo" : chaque round = une vraie capture du jeu (écran du haut),
       // montrée à des fenêtres de zoom croissantes. Pas de grande carte.
-      this.photos = cfg.photos || [];
+      this.photos = (cfg.photos || []).filter((p) => !excluded.has(p.zone));
       this.widthTiles = 0;
       this.heightTiles = 0;
       // minimap.png : silhouette du monde en espace RAM 1:1 (1 px = 1 tuile),

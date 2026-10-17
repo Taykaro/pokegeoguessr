@@ -1,0 +1,98 @@
+{
+ "_doc": [
+  "Corrections appliquées par server/pack.js au chargement (survivent à une reconstruction de pack.json).",
+  "doorFallbacks : portes overworld des intérieurs atteints seulement par script (sans warp) -> jauge chaud/froid.",
+  "excludeZones : photos de lieux impossibles à atteindre/gagner avec la version FR + la sauvegarde fournie."
+ ],
+ "doorFallbacks": {
+  "190": {
+   "gx": 342,
+   "gy": 377,
+   "map": "GOLDENROD_RADIO_TOWER_OBSERVATION_DECK",
+   "via": "GOLDENROD_RADIO_TOWER_1F"
+  },
+  "300": {
+   "gx": 919,
+   "gy": 228,
+   "map": "POKEMON_LEAGUE_ENTRANCE",
+   "via": "Plateau Indigo (entrée de la Ligue)"
+  },
+  "301": {
+   "gx": 919,
+   "gy": 228,
+   "map": "POKEMON_LEAGUE_WILL_ROOM",
+   "via": "Plateau Indigo (entrée de la Ligue)"
+  },
+  "302": {
+   "gx": 919,
+   "gy": 228,
+   "map": "POKEMON_LEAGUE_KOGA_ROOM",
+   "via": "Plateau Indigo (entrée de la Ligue)"
+  },
+  "303": {
+   "gx": 919,
+   "gy": 228,
+   "map": "POKEMON_LEAGUE_BRUNO_ROOM",
+   "via": "Plateau Indigo (entrée de la Ligue)"
+  },
+  "304": {
+   "gx": 919,
+   "gy": 228,
+   "map": "POKEMON_LEAGUE_KAREN_ROOM",
+   "via": "Plateau Indigo (entrée de la Ligue)"
+  },
+  "305": {
+   "gx": 919,
+   "gy": 228,
+   "map": "POKEMON_LEAGUE_LANCE_ROOM",
+   "via": "Plateau Indigo (entrée de la Ligue)"
+  },
+  "306": {
+   "gx": 919,
+   "gy": 228,
+   "map": "POKEMON_LEAGUE_HALL_OF_FAME",
+   "via": "Plateau Indigo (entrée de la Ligue)"
+  },
+  "378": {
+   "gx": 1218,
+   "gy": 265,
+   "map": "CELADON_CONDOMINIUMS_3F",
+   "via": "CELADON_CONDOMINIUMS_1F"
+  },
+  "379": {
+   "gx": 1218,
+   "gy": 265,
+   "map": "CELADON_CONDOMINIUMS_ROOF",
+   "via": "CELADON_CONDOMINIUMS_1F"
+  },
+  "380": {
+   "gx": 1218,
+   "gy": 265,
+   "map": "CELADON_CONDOMINIUMS_ROOF_ROOM",
+   "via": "CELADON_CONDOMINIUMS_1F"
+  },
+  "403": {
+   "gx": 1308,
+   "gy": 257,
+   "map": "SAFFRON_SILPH_CO_ROTOM_ROOM",
+   "via": "SAFFRON_SILPH_CO_HQ"
+  },
+  "539": {
+   "gx": 919,
+   "gy": 228,
+   "map": "POKEMON_LEAGUE_ENTRANCE_WIFI_ROOM",
+   "via": "Plateau Indigo (entrée de la Ligue)"
+  }
+ },
+ "excludeZones": {
+  "GOLDENROD_GAME_CORNER_JP": "carte de la version japonaise uniquement",
+  "CELADON_GAME_CORNER_JP": "carte de la version japonaise uniquement",
+  "ROUTE_10_POWER_PLANT_BROKEN": "la sauvegarde a la centrale réparée",
+  "SINJOH_RUINS_MYSTRI_STAGE": "événement Arceus (en attente de l'Arceus dans la sauvegarde)",
+  "SINJOH_RUINS_EXTERIOR": "événement Arceus (en attente de l'Arceus dans la sauvegarde)",
+  "SINJOH_RUINS_CABIN": "événement Arceus (en attente de l'Arceus dans la sauvegarde)",
+  "RUINS_OF_ALPH_HALL_ENTRANCE_SINJOH_EVENT": "variante des Ruines d'Alpha pendant l'événement Arceus (en attente de l'Arceus dans la sauvegarde)",
+  "RUINS_OF_ALPH_UNDERGROUND_HALL_SINJOH_EVENT": "variante des Ruines d'Alpha pendant l'événement Arceus (en attente de l'Arceus dans la sauvegarde)",
+  "RUINS_OF_ALPH_UNDERGROUND_HALL_SINJOH_EVENT_2": "variante des Ruines d'Alpha pendant l'événement Arceus (en attente de l'Arceus dans la sauvegarde)"
+ }
+}

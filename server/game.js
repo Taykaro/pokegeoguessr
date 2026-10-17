@@ -609,6 +609,9 @@ class Room {
       clutchInSec: this.clutchLeft,
       found: this.found,
       hints: this.computeHints(),
+      // false = lieu sans porte connue : aucune jauge possible ce round (le client
+      // l'affiche au lieu de laisser croire à un bug)
+      hintsAvailable: this.difficulty !== 'difficile' && !!(this.target && this.pack.targetWorldPos(this.target)),
       players: [...this.players.entries()]
         .map(([id, p]) => ({
           name: p.name,

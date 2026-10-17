@@ -99,6 +99,7 @@
   .pill.lost { --c:#ef5350; } .pill.region { --c:#4a90e2; } .pill.warm { --c:#f2c037; }
   .pill.goat { --c:#b57bff; border-color:#6a3fb0; box-shadow:0 0 14px rgba(160,108,240,.28); }
   .pill.goat .pill-ball { animation:bob 1.6s ease-in-out infinite; }
+  .pill-none { padding:8px 10px; border-radius:12px; font-size:12px; color:var(--ink2); background:var(--cream); border:2px dashed var(--cream2); text-align:center; }
   @keyframes bob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-2px)} }
   .btns { display:flex; gap:8px; }
   .btn { flex:1; padding:9px; background:#2b3550; color:#fff; border:1px solid #3a4665; border-radius:8px; cursor:pointer; font-size:13px; }
@@ -497,6 +498,7 @@ const I18N = {
     'menu.create':'➕ Créer un salon','menu.roomPh':'Nom du salon (ex : soirée)',
     'menu.region':'Région','menu.type':'Lieux',
     'opt.all':'Tout','type.all':'Tous','type.ext':'Extérieurs','type.int':'Intérieurs',
+    'hint.none':'🧭 Pas de jauge chaud/froid pour ce lieu',
     'menu.diff':'Difficulté','diff.facileOpt':'Facile — jauge en direct','diff.moyenOpt':'Moyen — jauge à chaque dézoom','diff.difficileOpt':'Difficile — aucune jauge',
     'menu.maxp':'Joueurs max','menu.unlimited':'Illimité','menu.pass':'Mot de passe (option)','menu.passPh':'vide = public',
     'menu.createBtn':'Créer le salon','menu.lang':'Langue',
@@ -554,6 +556,7 @@ const I18N = {
     'menu.create':'➕ Create a room','menu.roomPh':'Room name (e.g. party)',
     'menu.region':'Region','menu.type':'Places',
     'opt.all':'All','type.all':'All','type.ext':'Outdoor','type.int':'Indoor',
+    'hint.none':'🧭 No hot/cold gauge for this place',
     'menu.diff':'Difficulty','diff.facileOpt':'Easy — live gauge','diff.moyenOpt':'Medium — gauge on each zoom-out','diff.difficileOpt':'Hard — no gauge',
     'menu.maxp':'Max players','menu.unlimited':'Unlimited','menu.pass':'Password (optional)','menu.passPh':'empty = public',
     'menu.createBtn':'Create room','menu.lang':'Language',
@@ -810,6 +813,10 @@ function hints(s){
     const fill=pill.querySelector('.pill-fill'); if(isNew) void fill.offsetWidth; fill.style.width=(h.pct||0)+'%';
   }
   for(const el of [...box.children]) if(!seen.has(el.dataset.name)) el.remove();
+  // Lieu sans jauge possible (pas de porte connue) : on le dit plutôt que rien
+  if(s.phase==='playing' && s.hintsAvailable===false && s.difficulty!=='difficile'){
+    const note=document.createElement('div'); note.className='pill-none'; note.textContent=L('hint.none'); box.appendChild(note);
+  }
 }
 function img(){ $('photo').src = `/img/${room}?t=${Date.now()}`; }
 // Décompte propre à la manche : le serveur envoie un COMPTEUR (secondes restantes,
