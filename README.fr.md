@@ -7,7 +7,7 @@
 > personnage** sur place (dans l'émulateur) marque le point. Tout se joue **dans
 > le navigateur** — pas d'installation.
 
-**▶ Bêta en ligne : https://pokegeoguessr.onrender.com**
+**▶ Bêta en ligne : https://pokegeo.net**
 **💬 Discord : _(à venir)_**
 
 <p align="center">

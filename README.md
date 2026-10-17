@@ -7,7 +7,7 @@
 > character** there (in the emulator) scores the point. Everything runs **in the
 > browser** — nothing to install.
 
-**▶ Live beta: https://pokegeoguessr.onrender.com**
+**▶ Live beta: https://pokegeo.net**
 **💬 Discord: _(coming soon)_**
 
 <p align="center">

@@ -1,7 +1,7 @@
 // Suivi léger de l'activité : parties, manches, lieux joués, connexions.
 // Persistance best-effort dans data/stats.json (survit aux redémarrages du
-// process ; ⚠️ remis à zéro à chaque REDÉPLOIEMENT sur Render car le disque y
-// est éphémère — pour du durable au long cours, brancher une analytics externe).
+// process ; sur le NAS, data/ est un volume Docker conservé entre déploiements
+// et sauvegardé chaque nuit).
 const fs = require('fs');
 const path = require('path');
 const FILE = path.join(__dirname, '..', 'data', 'stats.json');

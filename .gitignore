@@ -45,7 +45,7 @@ dist.zip
 # Script ops one-off (setup serveur Discord via discli) — local, hors serveur de jeu
 discord-setup.sh
 
-# Stats d activite (persistance locale, ephemere sur Render)
+# Stats d activite (persistance locale, sur le serveur d hebergement)
 data/
 
 # Notes de travail locales
