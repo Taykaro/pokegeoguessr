@@ -2,7 +2,8 @@
  "_doc": [
   "Corrections appliquées par server/pack.js au chargement (survivent à une reconstruction de pack.json).",
   "doorFallbacks : portes overworld des intérieurs atteints seulement par script (sans warp) -> jauge chaud/froid.",
-  "excludeZones : photos de lieux impossibles à atteindre/gagner avec la version FR + la sauvegarde fournie (Sinjoh est atteignable : Arceus d'événement en équipe dans la sauvegarde)."
+  "excludeZones : photos de lieux impossibles à atteindre/gagner avec la version FR + la sauvegarde fournie (Sinjoh est atteignable : Arceus d'événement en équipe dans la sauvegarde).",
+  "excludePhotos : photos isolées sur une case inatteignable (bordure décorative, poche fermée par des arbres), clé = fichier."
  ],
  "doorFallbacks": {
   "190": {
@@ -106,5 +107,8 @@
   "GOLDENROD_GAME_CORNER_JP": "carte de la version japonaise uniquement",
   "CELADON_GAME_CORNER_JP": "carte de la version japonaise uniquement",
   "ROUTE_10_POWER_PLANT_BROKEN": "la sauvegarde a la centrale réparée"
+ },
+ "excludePhotos": {
+  "0556.png": "bordure est de Doublonville (381,382) derrière l'immeuble, inaccessible — signalé en jeu le 2026-10-19"
  }
 }
