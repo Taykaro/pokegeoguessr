@@ -931,7 +931,7 @@ function hints(s){
     const note=document.createElement('div'); note.className='pill-none'; note.textContent=L('hint.none'); box.appendChild(note);
   }
 }
-function img(){ $('photo').src = `/img/${room}?t=${Date.now()}`; }
+function img(){ $('photo').src = `/img/${encodeURIComponent(room)}?t=${Date.now()}`; }
 // Décompte propre à la manche : le serveur envoie un COMPTEUR (secondes restantes,
 // pas une heure), le client le décrémente localement. On ne redémarre le décompte
 // qu'au changement de manche/niveau (ou grosse dérive = reconnexion) pour éviter
